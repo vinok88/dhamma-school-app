@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Mahamevnawa Dhamma School – Student Management System for Melbourne Southbank">
+  <meta name="keywords" content="Dhamma School, Buddhist, Melbourne, Mahamevnawa, Student Management">
+  <meta name="author" content="Mahamevnawa Buddhist Monastery Melbourne">
+
+  <!-- Mobile PWA meta tags -->
+  <meta name="theme-color" content="#052254">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Dhamma School">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Mahamevnawa Dhamma School">
+  <meta property="og:description" content="Student Management System for Mahamevnawa Dhamma School, Melbourne">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://dhammaschool.mahamevnawa.org.au">
+
+  <!-- iOS icons -->
+  <!-- TODO: Add actual apple-touch-icon once app icons are designed -->
+  <!-- <link rel="apple-touch-icon" href="icons/Icon-192.png"> -->
+
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="manifest" href="manifest.json">
+  <title>Dhamma School – Admin Portal</title>
+
+  <style>
+    body {
+      background-color: #052254;
+      margin: 0;
+      padding: 0;
+    }
+    #loading-screen {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: #052254;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 9999;
+    }
+    #loading-screen .logo {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: rgba(247, 182, 86, 0.15);
+      border: 2px solid rgba(247, 182, 86, 0.4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px;
+      margin-bottom: 24px;
+    }
+    #loading-screen h1 {
+      color: #fff;
+      font-family: Georgia, serif;
+      font-size: 22px;
+      margin: 0 0 4px 0;
+      text-align: center;
+    }
+    #loading-screen p {
+      color: #F7B656;
+      font-family: sans-serif;
+      font-size: 14px;
+      margin: 0;
+    }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid rgba(255,255,255,0.2);
+      border-top-color: #F7B656;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-top: 32px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="loading-screen">
+    <div class="logo">🪷</div>
+    <h1>Mahamevnawa Dhamma School</h1>
+    <p>Melbourne – Southbank</p>
+    <div class="spinner"></div>
+  </div>
+
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      const loadingEl = document.getElementById('loading-screen');
+      if (loadingEl) {
+        loadingEl.style.opacity = '0';
+        loadingEl.style.transition = 'opacity 0.5s';
+        setTimeout(() => loadingEl.remove(), 500);
+      }
+    });
+  </script>
+
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

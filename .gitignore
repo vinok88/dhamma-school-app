@@ -1,0 +1,88 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code
+.vscode/
+
+# Claude Code local settings
+.claude/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android local machine paths
+android/local.properties
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Android signing keystore — never commit private keys
+*.jks
+*.keystore
+
+# iOS
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.dart_tool/
+ios/ServiceDefinitions.json
+ios/.generated/
+DerivedData/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivefile
+!default.perspectivefile
+
+# Supabase local dev
+supabase/.branches/
+supabase/.temp/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+dart_defines/
+google-services.json
+GoogleService-Info.plist
+
+# PDF source document (not needed in repo)
+*.pdf
+
+# Web build output
+web/flutter_service_worker.js
+web/flutter.js
+web/main.dart.js
+web/version.json
