@@ -21,6 +21,7 @@ import { useUploadStudentPhoto } from '@/hooks/useProfile';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { DatePicker } from '@/components/ui/DatePicker';
 import {
   registerStudentStep1Schema,
   registerStudentStep2Schema,
@@ -143,9 +144,15 @@ export default function RegisterStudentScreen() {
                 <Input label="Preferred Name" value={field.value} onChangeText={field.onChange} placeholder="Nickname (optional)" />
               )} />
               <Controller control={form1.control} name="dob" render={({ field }) => (
-                <Input label="Date of Birth" required value={field.value} onChangeText={field.onChange}
-                  placeholder="YYYY-MM-DD" error={form1.formState.errors.dob?.message}
-                  // TODO: Replace with a proper date picker component
+                <DatePicker
+                  label="Date of Birth"
+                  required
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  error={form1.formState.errors.dob?.message}
+                  mode="date"
+                  maximumDate={new Date()}
+                  minimumDate={new Date(new Date().getFullYear() - 18, 0, 1)}
                 />
               )} />
 

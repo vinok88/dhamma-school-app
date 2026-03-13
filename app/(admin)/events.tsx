@@ -10,6 +10,7 @@ import { EventCard } from '@/components/EventCard';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { EventFormData, EventType } from '@/types';
@@ -99,13 +100,22 @@ export default function EventsScreen() {
                   placeholder="Optional description" multiline numberOfLines={3} />
               )} />
               <Controller control={control} name="startDatetime" render={({ field }) => (
-                <Input label="Start Date & Time" required value={field.value} onChangeText={field.onChange}
-                  placeholder="2026-03-15T09:00:00" error={errors.startDatetime?.message}
-                  // TODO: Replace with a proper datetime picker
+                <DatePicker
+                  label="Start Date & Time"
+                  required
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  error={errors.startDatetime?.message}
+                  mode="datetime"
                 />
               )} />
               <Controller control={control} name="endDatetime" render={({ field }) => (
-                <Input label="End Date & Time" value={field.value} onChangeText={field.onChange} placeholder="Optional end time" />
+                <DatePicker
+                  label="End Date & Time (optional)"
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  mode="datetime"
+                />
               )} />
               <Controller control={control} name="location" render={({ field }) => (
                 <Input label="Location" required value={field.value} onChangeText={field.onChange}
