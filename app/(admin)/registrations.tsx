@@ -9,7 +9,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { formatDate } from '@/utils/date';
+import { formatDate, formatAge } from '@/utils/date';
 import { COLORS } from '@/constants';
 
 export default function RegistrationsScreen() {
@@ -62,7 +62,8 @@ export default function RegistrationsScreen() {
                 <Avatar uri={student.photoUrl} name={`${student.firstName} ${student.lastName}`} size={52} />
                 <View className="ml-3 flex-1">
                   <Text className="font-sans-semibold text-text-primary">{student.firstName} {student.lastName}</Text>
-                  <Text className="text-xs text-text-muted">{formatDate(student.dob)} · Parent: {student.parentName ?? '—'}</Text>
+                  <Text className="text-xs text-text-muted">DOB: {formatDate(student.dob)} ({formatAge(student.dob)})</Text>
+                  <Text className="text-xs text-text-muted">Parent: {student.parentName ?? '—'}</Text>
                   {student.hasAllergies && <Text className="text-xs text-error mt-0.5">⚠️ Has allergies</Text>}
                 </View>
               </View>

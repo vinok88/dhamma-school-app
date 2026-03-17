@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   ScrollView,
   TouchableOpacity,
   Alert,
@@ -23,8 +24,8 @@ type FormData = {
   role: UserRole;
   fullName: string;
   preferredName?: string;
-  phone?: string;
-  address?: string;
+  phone: string;
+  address: string;
 };
 
 const ROLES: { value: UserRole; label: string; icon: string; desc: string }[] = [
@@ -34,7 +35,7 @@ const ROLES: { value: UserRole; label: string; icon: string; desc: string }[] = 
 ];
 
 export default function RoleSelectScreen() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [saving, setSaving] = useState(false);
 
   const {
@@ -44,10 +45,14 @@ export default function RoleSelectScreen() {
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(roleSelectSchema),
-    defaultValues: { role: 'parent' },
+    defaultValues: { role: 'parent', fullName: '', phone: '', address: '' },
   });
 
   const selectedRole = watch('role');
+  const fullName = watch('fullName');
+  const phone = watch('phone');
+  const address = watch('address');
+  const isFormValid = !!fullName?.trim() && fullName.length >= 2 && !!phone?.trim() && !!address?.trim();
 
   async function onSubmit(data: FormData) {
     if (!user) return;
@@ -60,13 +65,14 @@ export default function RoleSelectScreen() {
         school_id: school?.id,
         full_name: data.fullName,
         preferred_name: data.preferredName,
-        phone: data.phone,
+        phone: `+61${data.phone}`,
         address: data.address,
         role: data.role,
         status: data.role === 'admin' ? 'active' : 'pending',
         updated_at: new Date().toISOString(),
       });
       if (error) throw error;
+      await refreshProfile();
     } catch (e: unknown) {
       Alert.alert('Error', e instanceof Error ? e.message : 'Could not save profile');
     } finally {
@@ -164,13 +170,25 @@ export default function RoleSelectScreen() {
               control={control}
               name="phone"
               render={({ field }) => (
-                <Input
-                  label="Phone Number"
-                  value={field.value}
-                  onChangeText={field.onChange}
-                  placeholder="+61 4XX XXX XXX"
-                  keyboardType="phone-pad"
-                />
+                <View className="mb-4">
+                  <Text className="text-sm font-sans-semibold text-text-primary mb-1">
+                    Phone Number<Text className="text-primary"> *</Text>
+                  </Text>
+                  <View className={`flex-row items-center bg-white border rounded-xl ${errors.phone ? 'border-error' : 'border-gray-200'}`}>
+                    <View className="bg-gray-100 px-3 py-3 rounded-l-xl border-r border-gray-200">
+                      <Text className="text-base text-text-primary">+61</Text>
+                    </View>
+                    <TextInput
+                      className="flex-1 px-3 py-3 text-base text-text-primary"
+                      value={field.value}
+                      onChangeText={field.onChange}
+                      placeholder="4XX XXX XXX"
+                      placeholderTextColor={COLORS.textMuted}
+                      keyboardType="phone-pad"
+                    />
+                  </View>
+                  {errors.phone && <Text className="text-error text-xs mt-1">{errors.phone.message}</Text>}
+                </View>
               )}
             />
 
@@ -180,11 +198,13 @@ export default function RoleSelectScreen() {
               render={({ field }) => (
                 <Input
                   label="Address"
+                  required
                   value={field.value}
                   onChangeText={field.onChange}
-                  placeholder="Street, Suburb, State"
+                  placeholder="15 Test St, Carlton, VIC, 3053"
                   multiline
                   numberOfLines={2}
+                  error={errors.address?.message}
                 />
               )}
             />
@@ -201,6 +221,7 @@ export default function RoleSelectScreen() {
               label="Create Profile"
               onPress={handleSubmit(onSubmit)}
               loading={saving}
+              disabled={!isFormValid}
               fullWidth
               size="lg"
             />

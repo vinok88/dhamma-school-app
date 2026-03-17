@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/query-client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth, AuthProvider } from '@/hooks/useAuth';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useFonts, DMSerifDisplay_400Regular } from '@expo-google-fonts/dm-serif-display';
 import { WorkSans_400Regular, WorkSans_500Medium, WorkSans_600SemiBold } from '@expo-google-fonts/work-sans';
@@ -27,7 +27,10 @@ function RootLayoutNav() {
       router.replace('/(auth)/role-select');
     } else {
       const role = profile.role;
-      if (inAuth) {
+      const expectedSegment = role === 'parent' ? '(parent)' : role === 'teacher' ? '(teacher)' : '(admin)';
+      const inCorrectRoute = segments[0] === expectedSegment;
+
+      if (!inCorrectRoute) {
         if (role === 'parent') router.replace('/(parent)');
         else if (role === 'teacher') router.replace('/(teacher)');
         else if (role === 'admin') router.replace('/(admin)');
@@ -65,7 +68,9 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <RootLayoutNav />
+      <AuthProvider>
+        <RootLayoutNav />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

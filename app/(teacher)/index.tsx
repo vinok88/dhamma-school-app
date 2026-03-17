@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,7 +14,8 @@ import { COLORS } from '@/constants';
 
 export default function TeacherHome() {
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, signOut } = useAuth();
+  const isPending = profile?.status !== 'active';
   const { data: myClass, isLoading: classLoading } = useMyClass(profile?.id ?? '');
   const { data: attendance } = useTodayAttendance(myClass?.id ?? '', lastSunday());
   const { data: announcements } = useAnnouncements(profile?.schoolId ?? '', myClass?.id);
@@ -23,6 +24,36 @@ export default function TeacherHome() {
   const totalCount = attendance?.length ?? 0;
 
   const displayName = profile?.preferredName ?? profile?.fullName?.split(' ')[0] ?? 'Teacher';
+
+  if (isPending) {
+    return (
+      <SafeAreaView className="flex-1 bg-scaffold-bg">
+        <View className="bg-navy px-5 pt-4 pb-6">
+          <Text className="text-white" style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular' }}>
+            {displayName} 🙏
+          </Text>
+        </View>
+        <View className="flex-1 items-center justify-center px-8">
+          <Text style={{ fontSize: 48 }}>⏳</Text>
+          <Text className="text-text-primary text-lg font-sans-semibold mt-4 text-center">
+            Awaiting Approval
+          </Text>
+          <Text className="text-text-muted text-sm mt-2 text-center">
+            Your teacher account is pending approval from an administrator. You will be able to access all features once approved.
+          </Text>
+          <TouchableOpacity
+            onPress={() => Alert.alert('Sign Out', 'Are you sure?', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Sign Out', style: 'destructive', onPress: signOut },
+            ])}
+            className="mt-8 px-6 py-3 rounded-xl bg-red-100"
+          >
+            <Text className="text-error font-sans-semibold">Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">

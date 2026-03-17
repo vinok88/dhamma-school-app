@@ -1,11 +1,31 @@
 import { z } from 'zod';
 
+const australianStates = ['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT'];
+
 export const roleSelectSchema = z.object({
   role: z.enum(['parent', 'teacher', 'admin']),
-  fullName: z.string().min(2, 'Full name is required'),
+  fullName: z.string()
+    .min(2, 'Full name is required')
+    .refine(
+      (val) => val.trim().split(/\s+/).length >= 2,
+      'Please enter both first and last name'
+    ),
   preferredName: z.string().optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
+  phone: z.string()
+    .min(1, 'Phone number is required')
+    .regex(/^\d{9,10}$/, 'Phone number must be 9 or 10 digits (without +61)'),
+  address: z.string()
+    .min(1, 'Address is required')
+    .refine(
+      (val) => {
+        const parts = val.split(',').map((p) => p.trim()).filter(Boolean);
+        if (parts.length < 4) return false;
+        const statePart = parts[parts.length - 2].toUpperCase();
+        const postcodePart = parts[parts.length - 1];
+        return australianStates.includes(statePart) && /^\d{4}$/.test(postcodePart);
+      },
+      'Address must follow: Street, Suburb, State, Postcode (e.g. 15 Test St, Carlton, VIC, 3053)'
+    ),
 });
 
 export const registerStudentStep1Schema = z.object({

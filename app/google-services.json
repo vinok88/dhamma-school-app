@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "487729685876",
+    "project_id": "dhamma-school-app-9a0d2",
+    "storage_bucket": "dhamma-school-app-9a0d2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:487729685876:android:885cfe809bfd9fd8c8b821",
+        "android_client_info": {
+          "package_name": "org.mahamevnawa.dhamma_school"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "487729685876-u4ds7qm3a3o5eoifrdf9og9cjq9pd0hd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "org.mahamevnawa.dhamma_school",
+            "certificate_hash": "8704e9bd2413c4a605f08a5f85f5df673bbaf904"
+          }
+        },
+        {
+          "client_id": "487729685876-quk6p4gsu1c3tlve5l1ec3kjvr905qck.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDZhmGcTd6kWrFWruR7KUuzs0Cm5dV8cd8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "487729685876-quk6p4gsu1c3tlve5l1ec3kjvr905qck.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
