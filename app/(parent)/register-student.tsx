@@ -16,7 +16,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/hooks/useAuth';
-import { useCreateStudent } from '@/hooks/useStudents';
+import { useCreateStudent, useUpdateStudentPhoto } from '@/hooks/useStudents';
 import { useUploadStudentPhoto } from '@/hooks/useProfile';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -39,6 +39,7 @@ export default function RegisterStudentScreen() {
   const { profile } = useAuth();
   const createStudent = useCreateStudent();
   const uploadPhoto = useUploadStudentPhoto();
+  const updateStudentPhoto = useUpdateStudentPhoto();
 
   const [step, setStep] = useState(0);
   const [step1Data, setStep1Data] = useState<Step1Data | null>(null);
@@ -56,7 +57,8 @@ export default function RegisterStudentScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8,
+      quality: 0.5,
+      exif: false,
     });
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
   }
@@ -72,11 +74,6 @@ export default function RegisterStudentScreen() {
     }
 
     try {
-      let photoUrl: string | undefined;
-      if (photoUri) {
-        // Upload photo after student is created
-      }
-
       const result = await createStudent.mutateAsync({
         schoolId: profile.schoolId,
         parentId: profile.id,
@@ -88,12 +85,14 @@ export default function RegisterStudentScreen() {
         hasAllergies: step2Data.hasAllergies,
         allergyNotes: step2Data.allergyNotes,
         photoPublishConsent: step2Data.photoPublishConsent,
-        photoUrl,
       });
 
-      // Upload photo if provided
+      // Upload photo and save path to student record
       if (photoUri && result?.id) {
-        await uploadPhoto.mutateAsync({ studentId: result.id, uri: photoUri });
+        const photoPath = await uploadPhoto.mutateAsync({ studentId: result.id, uri: photoUri });
+        if (photoPath) {
+          await updateStudentPhoto.mutateAsync({ studentId: result.id, photoPath });
+        }
       }
 
       Alert.alert('Submitted!', 'Registration submitted. Awaiting admin approval.', [
@@ -244,7 +243,7 @@ export default function RegisterStudentScreen() {
                   <Button
                     label="Submit"
                     onPress={handleSubmit}
-                    loading={createStudent.isPending || uploadPhoto.isPending}
+                    loading={createStudent.isPending || uploadPhoto.isPending || updateStudentPhoto.isPending}
                     fullWidth
                   />
                 </View>

@@ -646,7 +646,7 @@ eas submit --platform ios
 - [ ] `send-notification` Edge Function deployed
 - [ ] Supabase webhook configured to trigger Edge Function on `announcements` INSERT
 - [ ] Push notifications tested on physical iOS and Android devices
-- [ ] Admin account created in Supabase (set `role=admin`, `status=active`)
+- [ ] First admin account seeded via SQL (see Database Seeding section)
 - [ ] Default school record seeded (see migration 001)
 - [ ] Privacy policy and terms of service URLs added to app stores
 - [ ] App store screenshots prepared (6.7" iPhone, 12.9" iPad, Pixel 8)
@@ -662,10 +662,22 @@ INSERT INTO schools (name, location)
 VALUES ('Jethavanaya Dhamma School', 'Melbourne, VIC, Australia');
 ```
 
-Then create the first admin account by signing in via Google, then running:
+### Seed the first admin account
+
+Admin accounts cannot be self-created from the app. The first admin must be seeded via SQL:
+
+1. Sign in to the app via Google using the account that should be the first admin
+2. Complete the profile creation (as parent or teacher — the role will be overridden)
+3. Find your user ID in Supabase → Table Editor → `user_profiles`
+4. Run this in the SQL Editor:
 
 ```sql
 UPDATE user_profiles
 SET role = 'admin', status = 'active'
 WHERE id = 'YOUR_USER_UUID';
 ```
+
+Once the first admin is set up, they can promote other users to admin from the app:
+**More → Manage Admins → search for a user → Promote**
+
+> This is the only time you need to touch the database directly for admin setup.

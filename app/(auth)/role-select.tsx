@@ -31,7 +31,6 @@ type FormData = {
 const ROLES: { value: UserRole; label: string; icon: string; desc: string }[] = [
   { value: 'parent', label: 'Parent / Guardian', icon: '👨‍👩‍👧', desc: 'Register and track your child' },
   { value: 'teacher', label: 'Teacher', icon: '👩‍🏫', desc: 'Manage your class and attendance' },
-  { value: 'admin', label: 'Administrator', icon: '⚙️', desc: 'Full school management access' },
 ];
 
 export default function RoleSelectScreen() {
@@ -68,7 +67,7 @@ export default function RoleSelectScreen() {
         phone: `+61${data.phone}`,
         address: data.address,
         role: data.role,
-        status: data.role === 'admin' ? 'active' : 'pending',
+        status: 'pending',
         updated_at: new Date().toISOString(),
       });
       if (error) throw error;

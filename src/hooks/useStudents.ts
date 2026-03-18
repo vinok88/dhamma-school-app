@@ -151,6 +151,20 @@ export function useCreateStudent() {
   });
 }
 
+export function useUpdateStudentPhoto() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ studentId, photoPath }: { studentId: string; photoPath: string }) => {
+      const { error } = await supabase
+        .from(TABLES.STUDENTS)
+        .update({ photo_url: photoPath })
+        .eq('id', studentId);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['students'] }),
+  });
+}
+
 export function useApproveStudent() {
   const qc = useQueryClient();
   return useMutation({

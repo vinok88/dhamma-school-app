@@ -30,6 +30,7 @@ export default function AdminLayout() {
       <Tabs.Screen name="more" options={{ title: 'More', tabBarIcon: ({ focused }) => <TabIcon emoji="⋯" focused={focused} /> }} />
       {/* Hidden */}
       <Tabs.Screen name="teachers" options={{ href: null }} />
+      <Tabs.Screen name="admins" options={{ href: null }} />
       <Tabs.Screen name="events" options={{ href: null }} />
       <Tabs.Screen name="reports" options={{ href: null }} />
       <Tabs.Screen name="announce" options={{ href: null }} />

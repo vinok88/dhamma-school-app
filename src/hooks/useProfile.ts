@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { TABLES, STORAGE } from '@/constants';
 import * as FileSystem from 'expo-file-system';
@@ -61,11 +61,23 @@ export function useUploadStudentPhoto() {
         .from(STORAGE.STUDENT_PHOTOS)
         .upload(path, decode(base64), { contentType: `image/${ext}`, upsert: true });
       if (error) throw error;
-      const { data: urlData } = await supabase.storage
-        .from(STORAGE.STUDENT_PHOTOS)
-        .createSignedUrl(path, 3600);
-      return urlData?.signedUrl ?? null;
+      // Return path so caller can persist it; signed URLs are generated on display
+      return path;
     },
+  });
+}
+
+export function useStudentPhotoUrl(path: string | undefined) {
+  return useQuery({
+    queryKey: ['signed-url', STORAGE.STUDENT_PHOTOS, path],
+    queryFn: async () => {
+      const { data } = await supabase.storage
+        .from(STORAGE.STUDENT_PHOTOS)
+        .createSignedUrl(path!, 3600);
+      return data?.signedUrl ?? null;
+    },
+    enabled: !!path && !path.startsWith('http'),
+    staleTime: 50 * 60 * 1000, // 50 min — refresh before 1-hour expiry
   });
 }
 

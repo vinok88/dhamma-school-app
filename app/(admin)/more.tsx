@@ -7,6 +7,7 @@ import { COLORS } from '@/constants';
 
 const MENU_ITEMS = [
   { label: 'Teachers', icon: '👩‍🏫', route: '/(admin)/teachers', desc: 'Manage teacher accounts' },
+  { label: 'Manage Admins', icon: '🔑', route: '/(admin)/admins', desc: 'Promote or remove administrators' },
   { label: 'Events', icon: '📅', route: '/(admin)/events', desc: 'School events & calendar' },
   { label: 'Reports', icon: '📋', route: '/(admin)/reports', desc: 'Attendance reports & export' },
   { label: 'Announcements', icon: '📢', route: '/(admin)/announce', desc: 'Compose & send notices' },

@@ -5,6 +5,7 @@ import { StudentModel } from '@/types';
 import { Avatar } from './ui/Avatar';
 import { Badge } from './ui/Badge';
 import { formatAge } from '@/utils/date';
+import { useStudentPhotoUrl } from '@/hooks/useProfile';
 
 interface StudentCardProps {
   student: StudentModel;
@@ -13,6 +14,7 @@ interface StudentCardProps {
 
 export function StudentCard({ student, routePrefix = '' }: StudentCardProps) {
   const router = useRouter();
+  const { data: signedPhotoUrl } = useStudentPhotoUrl(student.photoUrl);
   return (
     <TouchableOpacity
       onPress={() => router.push(`${routePrefix}/student/${student.id}` as never)}
@@ -20,7 +22,7 @@ export function StudentCard({ student, routePrefix = '' }: StudentCardProps) {
       style={{ shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 1 }}
       activeOpacity={0.7}
     >
-      <Avatar uri={student.photoUrl} name={`${student.firstName} ${student.lastName}`} size={52} />
+      <Avatar uri={signedPhotoUrl ?? undefined} name={`${student.firstName} ${student.lastName}`} size={52} />
       <View className="flex-1 ml-3">
         <Text className="text-base font-sans-semibold text-text-primary">
           {student.preferredName ?? student.firstName} {student.lastName}
