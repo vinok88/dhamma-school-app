@@ -8,6 +8,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
@@ -80,25 +81,30 @@ export default function RoleSelectScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-scaffold-bg">
+    <SafeAreaView className="flex-1" style={{ backgroundColor: '#FAF6F0' }}>
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-          <View className="px-5 pt-8 pb-6">
+          {/* Pagoda illustration header */}
+          <ImageBackground
+            source={require('../../assets/images/pagoda.png')}
+            style={{ height: 220 }}
+            resizeMode="cover"
+          />
+          <View className="px-5 pt-6 pb-6">
             <Text
-              className="text-navy mb-1"
-              style={{ fontSize: 26, fontFamily: 'DMSerifDisplay_400Regular' }}
+              className="text-center mb-1"
+              style={{ fontSize: 26, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}
             >
-              Welcome 🙏
+              Dhamma School
             </Text>
-            <Text className="text-text-muted text-sm mb-8">
-              Tell us who you are to get started.
+            <Text className="text-center text-xs tracking-widest uppercase mb-6" style={{ color: '#8B7D6B' }}>
+              Please choose your role
             </Text>
 
             {/* Role selector */}
-            <Text className="text-sm font-sans-semibold text-text-primary mb-3">I am a…</Text>
             <View className="mb-6 gap-3">
               {ROLES.map((r) => {
                 const active = selectedRole === r.value;
@@ -110,23 +116,28 @@ export default function RoleSelectScreen() {
                     render={({ field }) => (
                       <TouchableOpacity
                         onPress={() => field.onChange(r.value)}
-                        className={`rounded-xl p-4 flex-row items-center border-2 ${
-                          active ? 'border-primary bg-red-50' : 'border-gray-200 bg-white'
-                        }`}
+                        className="rounded-xl p-4 flex-row items-center bg-white"
+                        style={{
+                          borderWidth: 1,
+                          borderColor: active ? COLORS.primary : '#EDE8E0',
+                          borderLeftWidth: 4,
+                          borderLeftColor: active ? COLORS.primary : '#EDE8E0',
+                        }}
                         activeOpacity={0.7}
                       >
-                        <Text style={{ fontSize: 28 }}>{r.icon}</Text>
-                        <View className="ml-3 flex-1">
-                          <Text className={`font-sans-semibold text-base ${active ? 'text-primary' : 'text-text-primary'}`}>
+                        <View
+                          className="w-10 h-10 rounded-full items-center justify-center mr-3"
+                          style={{ backgroundColor: active ? '#FDF3E7' : '#F5EFE6' }}
+                        >
+                          <Text style={{ fontSize: 22 }}>{r.icon}</Text>
+                        </View>
+                        <View className="flex-1">
+                          <Text className="font-sans-semibold text-base" style={{ color: active ? COLORS.primary : '#1C1C1E' }}>
                             {r.label}
                           </Text>
-                          <Text className="text-xs text-text-muted">{r.desc}</Text>
+                          <Text className="text-xs" style={{ color: '#8B7D6B' }}>{r.desc}</Text>
                         </View>
-                        {active && (
-                          <View className="w-5 h-5 rounded-full bg-primary items-center justify-center">
-                            <Text className="text-white text-xs">✓</Text>
-                          </View>
-                        )}
+                        <Text style={{ color: '#8B7D6B', fontSize: 18 }}>›</Text>
                       </TouchableOpacity>
                     )}
                   />
@@ -135,7 +146,7 @@ export default function RoleSelectScreen() {
             </View>
 
             {/* Profile fields */}
-            <Text className="text-sm font-sans-semibold text-text-primary mb-3">Your details</Text>
+            <Text className="text-sm font-sans-semibold mb-3" style={{ color: '#1C1C1E' }}>Your details</Text>
 
             <Controller
               control={control}

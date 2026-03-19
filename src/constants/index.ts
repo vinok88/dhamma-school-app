@@ -23,20 +23,20 @@ export const STORAGE = {
 
 // Colors
 export const COLORS = {
-  primary: '#F34E3A',
+  primary: '#D4873A',
   navy: '#052254',
-  gold: '#F7B656',
-  cream: '#FBF4C2',
+  gold: '#E8A84C',
+  cream: '#F5EFE6',
   brown: '#614141',
   success: '#4CAF87',
   error: '#C0392B',
   pending: '#F39C12',
   white: '#FFFFFF',
-  scaffoldBg: '#F5F5F5',
+  scaffoldBg: '#FAF6F0',
   cardBg: '#FFFFFF',
-  textPrimary: '#1A1A2E',
-  textMuted: '#6B7280',
-  divider: '#E5E7EB',
+  textPrimary: '#1C1C1E',
+  textMuted: '#8B7D6B',
+  divider: '#EDE8E0',
 } as const;
 
 // App config

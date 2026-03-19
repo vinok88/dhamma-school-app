@@ -18,14 +18,15 @@ export default function ParentHome() {
 
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">
-      {/* Header */}
-      <View className="bg-navy px-5 pt-4 pb-6">
+      {/* Header — cream background */}
+      <View className="bg-scaffold-bg px-5 pt-4 pb-6">
         <View className="flex-row items-center justify-between">
           <View>
-            <Text className="text-blue-200 text-sm">Good day,</Text>
+            <Text className="text-xs tracking-widest uppercase mb-1" style={{ color: COLORS.textMuted }}>
+              Good Morning
+            </Text>
             <Text
-              className="text-white"
-              style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular' }}
+              style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}
             >
               {displayName} 🙏
             </Text>
@@ -36,7 +37,7 @@ export default function ParentHome() {
         </View>
       </View>
 
-      <ScrollView className="flex-1 px-4 pt-4" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
         {/* Register CTA */}
         <TouchableOpacity
           onPress={() => router.push('/(parent)/register-student')}
@@ -47,13 +48,15 @@ export default function ParentHome() {
           <Text style={{ fontSize: 32 }}>✏️</Text>
           <View className="ml-4 flex-1">
             <Text className="text-white font-sans-semibold text-base">Register a Child</Text>
-            <Text className="text-red-100 text-sm">Enrol your child in the Dhamma school</Text>
+            <Text className="text-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>
+              Enrol your child in the Dhamma school
+            </Text>
           </View>
           <Text className="text-white text-xl">›</Text>
         </TouchableOpacity>
 
         {/* Children section */}
-        <Text className="text-base font-sans-semibold text-text-primary mb-3">
+        <Text className="text-xs tracking-widest uppercase mb-3" style={{ color: COLORS.textMuted }}>
           My Children
         </Text>
 
