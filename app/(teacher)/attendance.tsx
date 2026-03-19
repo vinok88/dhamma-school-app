@@ -5,12 +5,68 @@ import { useAuth } from '@/hooks/useAuth';
 import { useMyClass } from '@/hooks/useClasses';
 import { useClassStudents } from '@/hooks/useStudents';
 import { useTodayAttendance, useCheckIn, useCheckOut, useMarkAbsent } from '@/hooks/useAttendance';
+import { useStudentPhotoUrl } from '@/hooks/useProfile';
 import { Avatar } from '@/components/ui/Avatar';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { toIsoDate, lastSunday, formatDate } from '@/utils/date';
 import { COLORS, ATTENDANCE_STATUS_CONFIG } from '@/constants';
 import { AttendanceModel } from '@/types';
+
+function AttendanceRow({ student, record, onCheckIn, onCheckOut, onAbsent }: {
+  student: any;
+  record: AttendanceModel | undefined;
+  onCheckIn: () => void;
+  onCheckOut: (id: string) => void;
+  onAbsent: () => void;
+}) {
+  const { data: signedPhotoUrl } = useStudentPhotoUrl(student.photoUrl);
+  const status = record?.status;
+  const cfg = status ? ATTENDANCE_STATUS_CONFIG[status] : null;
+
+  return (
+    <View
+      className="bg-white rounded-2xl p-4 flex-row items-center"
+      style={{ shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 }}
+    >
+      <Avatar uri={signedPhotoUrl ?? undefined} name={`${student.firstName} ${student.lastName}`} size={48} />
+      <View className="flex-1 ml-3">
+        <Text className="font-sans-semibold text-text-primary">
+          {student.preferredName ?? student.firstName} {student.lastName}
+        </Text>
+        {cfg ? (
+          <View className="mt-1 px-2 py-0.5 rounded-full self-start" style={{ backgroundColor: cfg.bg }}>
+            <Text style={{ color: cfg.color, fontSize: 11 }}>{cfg.label}</Text>
+          </View>
+        ) : (
+          <Text className="text-xs text-text-muted mt-1">Not recorded</Text>
+        )}
+      </View>
+      <View className="flex-row gap-2">
+        {(!status || status === 'absent') && (
+          <TouchableOpacity onPress={onCheckIn} className="bg-success rounded-xl px-3 py-2" activeOpacity={0.8}>
+            <Text className="text-white text-xs font-sans-semibold">Check In</Text>
+          </TouchableOpacity>
+        )}
+        {status === 'checked_in' && (
+          <TouchableOpacity
+            onPress={() => onCheckOut(record!.id)}
+            className="rounded-xl px-3 py-2"
+            style={{ backgroundColor: '#8B5CF6' }}
+            activeOpacity={0.8}
+          >
+            <Text className="text-white text-xs font-sans-semibold">Check Out</Text>
+          </TouchableOpacity>
+        )}
+        {!status && (
+          <TouchableOpacity onPress={onAbsent} className="bg-red-100 rounded-xl px-3 py-2" activeOpacity={0.8}>
+            <Text className="text-error text-xs font-sans-semibold">Absent</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+}
 
 export default function AttendanceScreen() {
   const { profile } = useAuth();
@@ -99,64 +155,15 @@ export default function AttendanceScreen() {
           data={students}
           keyExtractor={(s) => s.id}
           contentContainerStyle={{ padding: 16, gap: 8 }}
-          renderItem={({ item: student }) => {
-            const record = getRecord(student.id);
-            const status = record?.status;
-            const cfg = status ? ATTENDANCE_STATUS_CONFIG[status] : null;
-
-            return (
-              <View
-                className="bg-white rounded-2xl p-4 flex-row items-center"
-                style={{ shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 }}
-              >
-                <Avatar uri={student.photoUrl} name={`${student.firstName} ${student.lastName}`} size={48} />
-                <View className="flex-1 ml-3">
-                  <Text className="font-sans-semibold text-text-primary">
-                    {student.preferredName ?? student.firstName} {student.lastName}
-                  </Text>
-                  {cfg ? (
-                    <View className="mt-1 px-2 py-0.5 rounded-full self-start" style={{ backgroundColor: cfg.bg }}>
-                      <Text style={{ color: cfg.color, fontSize: 11 }}>{cfg.label}</Text>
-                    </View>
-                  ) : (
-                    <Text className="text-xs text-text-muted mt-1">Not recorded</Text>
-                  )}
-                </View>
-
-                {/* Action buttons */}
-                <View className="flex-row gap-2">
-                  {(!status || status === 'absent') && (
-                    <TouchableOpacity
-                      onPress={() => handleCheckIn(student.id)}
-                      className="bg-success rounded-xl px-3 py-2"
-                      activeOpacity={0.8}
-                    >
-                      <Text className="text-white text-xs font-sans-semibold">Check In</Text>
-                    </TouchableOpacity>
-                  )}
-                  {status === 'checked_in' && (
-                    <TouchableOpacity
-                      onPress={() => handleCheckOut(record!.id)}
-                      className="rounded-xl px-3 py-2"
-                      style={{ backgroundColor: '#8B5CF6' }}
-                      activeOpacity={0.8}
-                    >
-                      <Text className="text-white text-xs font-sans-semibold">Check Out</Text>
-                    </TouchableOpacity>
-                  )}
-                  {!status && (
-                    <TouchableOpacity
-                      onPress={() => handleAbsent(student.id)}
-                      className="bg-red-100 rounded-xl px-3 py-2"
-                      activeOpacity={0.8}
-                    >
-                      <Text className="text-error text-xs font-sans-semibold">Absent</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            );
-          }}
+          renderItem={({ item: student }) => (
+            <AttendanceRow
+              student={student}
+              record={getRecord(student.id)}
+              onCheckIn={() => handleCheckIn(student.id)}
+              onCheckOut={(id) => handleCheckOut(id)}
+              onAbsent={() => handleAbsent(student.id)}
+            />
+          )}
         />
       )}
     </SafeAreaView>

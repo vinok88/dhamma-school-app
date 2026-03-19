@@ -3,6 +3,7 @@ import { View, Text, FlatList, TextInput, TouchableOpacity, Alert } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { useAllStudents, useUpdateStudentStatus } from '@/hooks/useStudents';
+import { useStudentPhotoUrl } from '@/hooks/useProfile';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -12,6 +13,32 @@ import { COLORS } from '@/constants';
 import { StudentStatus } from '@/types';
 
 const STATUS_FILTERS: (StudentStatus | 'all')[] = ['all', 'active', 'pending', 'under_review', 'inactive', 'dropped'];
+
+function StudentRow({ student: s, onStatusChange }: { student: any; onStatusChange: (id: string, status: StudentStatus) => void }) {
+  const { data: signedPhotoUrl } = useStudentPhotoUrl(s.photoUrl);
+  return (
+    <View
+      className="bg-white rounded-2xl p-4 flex-row items-center"
+      style={{ shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}
+    >
+      <Avatar uri={signedPhotoUrl ?? undefined} name={`${s.firstName} ${s.lastName}`} size={48} />
+      <View className="flex-1 ml-3">
+        <Text className="font-sans-semibold text-text-primary">{s.firstName} {s.lastName}</Text>
+        <Text className="text-xs text-text-muted">{formatAge(s.dob)} · {s.className ?? 'Unassigned'}</Text>
+        <View className="mt-1"><Badge label="" type="student" status={s.status} /></View>
+      </View>
+      <TouchableOpacity
+        onPress={() => {
+          const next: StudentStatus = s.status === 'active' ? 'inactive' : 'active';
+          onStatusChange(s.id, next);
+        }}
+        className="ml-2 p-2"
+      >
+        <Text className="text-xs text-text-muted">⋮</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
 
 export default function StudentsScreen() {
   const { profile } = useAuth();
@@ -91,26 +118,7 @@ export default function StudentsScreen() {
           keyExtractor={(s) => s.id}
           contentContainerStyle={{ padding: 16, gap: 8 }}
           renderItem={({ item: s }) => (
-            <View
-              className="bg-white rounded-2xl p-4 flex-row items-center"
-              style={{ shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}
-            >
-              <Avatar uri={s.photoUrl} name={`${s.firstName} ${s.lastName}`} size={48} />
-              <View className="flex-1 ml-3">
-                <Text className="font-sans-semibold text-text-primary">{s.firstName} {s.lastName}</Text>
-                <Text className="text-xs text-text-muted">{formatAge(s.dob)} · {s.className ?? 'Unassigned'}</Text>
-                <View className="mt-1"><Badge label="" type="student" status={s.status} /></View>
-              </View>
-              <TouchableOpacity
-                onPress={() => {
-                  const next: StudentStatus = s.status === 'active' ? 'inactive' : 'active';
-                  confirmStatusChange(s.id, next);
-                }}
-                className="ml-2 p-2"
-              >
-                <Text className="text-xs text-text-muted">⋮</Text>
-              </TouchableOpacity>
-            </View>
+            <StudentRow student={s} onStatusChange={confirmStatusChange} />
           )}
         />
       )}
