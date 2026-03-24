@@ -34,12 +34,11 @@ export default function LoginScreen() {
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: '#FAF6F0' }}>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-        {/* Pagoda illustration header */}
+        {/* Temple illustration header */}
         <ImageBackground
           source={PAGODA_IMAGE}
-          style={{ height: 280 }}
-          resizeMode="cover"
-          imageStyle={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}
+          style={{ height: 280, backgroundColor: '#F5EFE6' }}
+          resizeMode="contain"
         />
 
         {/* Content */}

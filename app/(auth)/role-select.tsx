@@ -87,19 +87,13 @@ export default function RoleSelectScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-          {/* Pagoda illustration header */}
+          {/* Temple illustration header */}
           <ImageBackground
             source={require('../../assets/images/pagoda.png')}
-            style={{ height: 220 }}
-            resizeMode="cover"
+            style={{ height: 260, backgroundColor: '#F5EFE6' }}
+            resizeMode="contain"
           />
-          <View className="px-5 pt-6 pb-6">
-            <Text
-              className="text-center mb-1"
-              style={{ fontSize: 26, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}
-            >
-              Dhamma School
-            </Text>
+          <View className="px-5 pt-4 pb-6">
             <Text className="text-center text-xs tracking-widest uppercase mb-6" style={{ color: '#8B7D6B' }}>
               Please choose your role
             </Text>
