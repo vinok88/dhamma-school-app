@@ -16,6 +16,7 @@ GoogleService-Info.plist
 
 # Build outputs
 *.jks
+credentials.json
 *.p8
 *.p12
 *.key
