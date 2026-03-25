@@ -3,12 +3,12 @@ import {
   View,
   Text,
   TextInput,
+  Image,
   ScrollView,
   TouchableOpacity,
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
@@ -87,13 +87,14 @@ export default function RoleSelectScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-          {/* Temple illustration header - cover fills full width, crops the icon border */}
-          <ImageBackground
-            source={require('../../assets/images/pagoda.png')}
-            style={{ height: 300, width: '100%' }}
-            resizeMode="cover"
-            imageStyle={{ top: -10 }}
-          />
+          {/* Temple illustration */}
+          <View style={{ width: '100%', height: 260, backgroundColor: '#FAF6F0', alignItems: 'center', justifyContent: 'center' }}>
+            <Image
+              source={require('../../assets/images/pagoda.png')}
+              style={{ width: '100%', height: 260 }}
+              resizeMode="contain"
+            />
+          </View>
           <View className="px-5 pt-4 pb-6">
             <Text className="text-center text-xs tracking-widest uppercase mb-6" style={{ color: '#8B7D6B' }}>
               Please choose your role

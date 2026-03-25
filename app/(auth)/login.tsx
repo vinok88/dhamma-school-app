@@ -7,7 +7,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
-  ImageBackground,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
@@ -34,13 +34,14 @@ export default function LoginScreen() {
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: '#FAF6F0' }}>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-        {/* Temple illustration header - cover fills full width, crops the icon border */}
-        <ImageBackground
-          source={PAGODA_IMAGE}
-          style={{ height: 320, width: '100%' }}
-          resizeMode="cover"
-          imageStyle={{ top: -10 }}
-        />
+        {/* Temple illustration */}
+        <View style={{ width: '100%', height: 280, backgroundColor: '#FAF6F0', alignItems: 'center', justifyContent: 'center' }}>
+          <Image
+            source={PAGODA_IMAGE}
+            style={{ width: '100%', height: 280 }}
+            resizeMode="contain"
+          />
+        </View>
 
         {/* Content */}
         <View className="flex-1 px-8 pt-8 pb-8">
@@ -105,7 +106,7 @@ export default function LoginScreen() {
           <Text className="text-xs text-center mt-10 px-4" style={{ color: COLORS.primary }}>
             By signing in you agree to our{' '}
             <Text style={{ textDecorationLine: 'underline' }}>Terms of Service</Text>
-            {' '}&amp;{' '}
+            {' & '}
             <Text style={{ textDecorationLine: 'underline' }}>Privacy Policy</Text>
           </Text>
         </View>
