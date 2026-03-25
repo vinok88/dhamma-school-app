@@ -16,6 +16,7 @@ GoogleService-Info.plist
 
 # Build outputs
 *.jks
+credentials.json
 *.p8
 *.p12
 *.key
@@ -34,6 +35,10 @@ yarn-error.*
 
 # TypeScript
 *.tsbuildinfo
+
+# Native folders (EAS uses prebuild/CNG — regenerated at build time)
+android/
+ios/
 
 # Build APKs
 build-*.apk

@@ -13,7 +13,7 @@ interface ScreenHeaderProps {
 
 export function ScreenHeader({ title, subtitle, showBack = false, right, dark = false }: ScreenHeaderProps) {
   const router = useRouter();
-  const bg = dark ? 'bg-navy' : 'bg-white';
+  const bg = dark ? 'bg-navy' : 'bg-scaffold-bg';
   const textColor = dark ? 'text-white' : 'text-text-primary';
   const subtitleColor = dark ? 'text-blue-200' : 'text-text-muted';
 

@@ -81,6 +81,20 @@ export function useStudentPhotoUrl(path: string | undefined) {
   });
 }
 
+export function useProfilePhotoUrl(path: string | undefined) {
+  return useQuery({
+    queryKey: ['signed-url', STORAGE.PROFILE_PHOTOS, path],
+    queryFn: async () => {
+      const { data } = await supabase.storage
+        .from(STORAGE.PROFILE_PHOTOS)
+        .createSignedUrl(path!, 3600);
+      return data?.signedUrl ?? null;
+    },
+    enabled: !!path && !path.startsWith('http'),
+    staleTime: 50 * 60 * 1000,
+  });
+}
+
 // Decode base64 string to Uint8Array
 function decode(base64: string): Uint8Array {
   const binary = atob(base64);

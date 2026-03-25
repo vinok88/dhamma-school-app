@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { useStudentDetail } from '@/hooks/useStudents';
+import { useStudentPhotoUrl } from '@/hooks/useProfile';
 import { useStudentAttendanceHistory } from '@/hooks/useAttendance';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Card } from '@/components/ui/Card';
@@ -15,6 +16,7 @@ export default function StudentStatusScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: student, isLoading } = useStudentDetail(id);
   const { data: history } = useStudentAttendanceHistory(id);
+  const { data: signedPhotoUrl } = useStudentPhotoUrl(student?.photoUrl);
 
   if (isLoading) return <LoadingSpinner fullScreen />;
   if (!student) return null;
@@ -31,9 +33,9 @@ export default function StudentStatusScreen() {
         {/* Profile card */}
         <Card className="mb-4">
           <View className="flex-row items-center mb-4">
-            {student.photoUrl ? (
+            {signedPhotoUrl ? (
               <Image
-                source={{ uri: student.photoUrl }}
+                source={{ uri: signedPhotoUrl }}
                 style={{ width: 80, height: 80, borderRadius: 40 }}
                 resizeMode="cover"
               />

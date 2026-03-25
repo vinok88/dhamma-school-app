@@ -5,12 +5,91 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePendingStudents, useApproveStudent, useRejectStudent } from '@/hooks/useStudents';
 import { usePendingTeachers, useApproveTeacher, useRejectTeacher } from '@/hooks/useTeachers';
 import { useClasses } from '@/hooks/useClasses';
+import { useStudentPhotoUrl, useProfilePhotoUrl } from '@/hooks/useProfile';
 import { Avatar } from '@/components/ui/Avatar';
 import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatDate, formatAge } from '@/utils/date';
 import { COLORS } from '@/constants';
+
+function PendingStudentCard({ student, classes, selectedClassId, rejectNote, onSelectClass, onRejectNoteChange, onApprove, onReject }: {
+  student: any;
+  classes: any[];
+  selectedClassId?: string;
+  rejectNote: string;
+  onSelectClass: (id: string) => void;
+  onRejectNoteChange: (t: string) => void;
+  onApprove: () => void;
+  onReject: () => void;
+}) {
+  const { data: signedPhotoUrl } = useStudentPhotoUrl(student.photoUrl);
+  return (
+    <Card className="mb-4">
+      <View className="flex-row items-center mb-3">
+        <Avatar uri={signedPhotoUrl ?? undefined} name={`${student.firstName} ${student.lastName}`} size={52} />
+        <View className="ml-3 flex-1">
+          <Text className="font-sans-semibold text-text-primary">{student.firstName} {student.lastName}</Text>
+          <Text className="text-xs text-text-muted">DOB: {formatDate(student.dob)} ({formatAge(student.dob)})</Text>
+          <Text className="text-xs text-text-muted">Parent: {student.parentName ?? '—'}</Text>
+          {student.hasAllergies && <Text className="text-xs text-error mt-0.5">⚠️ Has allergies</Text>}
+        </View>
+      </View>
+      <Text className="text-xs font-sans-semibold text-text-muted mb-1">Assign to Class</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
+        <View className="flex-row gap-2">
+          {classes.map((c) => (
+            <TouchableOpacity
+              key={c.id}
+              onPress={() => onSelectClass(c.id)}
+              className={`px-3 py-1.5 rounded-full border ${selectedClassId === c.id ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
+            >
+              <Text className={`text-xs font-sans-semibold ${selectedClassId === c.id ? 'text-white' : 'text-text-muted'}`}>{c.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+      <TextInput
+        className="bg-scaffold-bg rounded-xl px-3 py-2 text-sm text-text-primary mb-3"
+        placeholder="Rejection note (optional)"
+        placeholderTextColor={COLORS.textMuted}
+        value={rejectNote}
+        onChangeText={onRejectNoteChange}
+      />
+      <View className="flex-row gap-3">
+        <TouchableOpacity onPress={onApprove} className="flex-1 bg-success py-3 rounded-xl items-center">
+          <Text className="text-white font-sans-semibold text-sm">✓ Approve</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onReject} className="flex-1 bg-red-100 py-3 rounded-xl items-center">
+          <Text className="text-error font-sans-semibold text-sm">✗ Reject</Text>
+        </TouchableOpacity>
+      </View>
+    </Card>
+  );
+}
+
+function PendingTeacherCard({ teacher, onApprove, onReject }: { teacher: any; onApprove: () => void; onReject: () => void }) {
+  const { data: signedPhotoUrl } = useProfilePhotoUrl(teacher.profilePhotoUrl);
+  return (
+    <Card className="mb-4">
+      <View className="flex-row items-center mb-4">
+        <Avatar uri={signedPhotoUrl ?? undefined} name={teacher.fullName} size={52} />
+        <View className="ml-3 flex-1">
+          <Text className="font-sans-semibold text-text-primary">{teacher.fullName}</Text>
+          <Text className="text-xs text-text-muted">{teacher.phone ?? '—'}</Text>
+        </View>
+      </View>
+      <View className="flex-row gap-3">
+        <TouchableOpacity onPress={onApprove} className="flex-1 bg-success py-3 rounded-xl items-center">
+          <Text className="text-white font-sans-semibold text-sm">✓ Approve</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onReject} className="flex-1 bg-red-100 py-3 rounded-xl items-center">
+          <Text className="text-error font-sans-semibold text-sm">✗ Reject</Text>
+        </TouchableOpacity>
+      </View>
+    </Card>
+  );
+}
 
 export default function RegistrationsScreen() {
   const { profile } = useAuth();
@@ -31,8 +110,9 @@ export default function RegistrationsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">
-      <View className="bg-navy px-5 pt-4 pb-4">
-        <Text className="text-white" style={{ fontSize: 20, fontFamily: 'DMSerifDisplay_400Regular' }}>
+      <View className="bg-scaffold-bg px-5 pt-4 pb-5">
+        <Text className="text-xs tracking-widest uppercase mb-1" style={{ color: '#8B7D6B' }}>Admin</Text>
+        <Text style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}>
           Pending Registrations ⏳
         </Text>
       </View>
@@ -57,60 +137,21 @@ export default function RegistrationsScreen() {
           studentsLoading ? <LoadingSpinner /> :
           !pendingStudents?.length ? <EmptyState icon="✅" title="All clear" subtitle="No pending student registrations" /> :
           pendingStudents.map((student) => (
-            <Card key={student.id} className="mb-4">
-              <View className="flex-row items-center mb-3">
-                <Avatar uri={student.photoUrl} name={`${student.firstName} ${student.lastName}`} size={52} />
-                <View className="ml-3 flex-1">
-                  <Text className="font-sans-semibold text-text-primary">{student.firstName} {student.lastName}</Text>
-                  <Text className="text-xs text-text-muted">DOB: {formatDate(student.dob)} ({formatAge(student.dob)})</Text>
-                  <Text className="text-xs text-text-muted">Parent: {student.parentName ?? '—'}</Text>
-                  {student.hasAllergies && <Text className="text-xs text-error mt-0.5">⚠️ Has allergies</Text>}
-                </View>
-              </View>
-
-              {/* Class assignment */}
-              <Text className="text-xs font-sans-semibold text-text-muted mb-1">Assign to Class</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
-                <View className="flex-row gap-2">
-                  {(classes ?? []).map((c) => (
-                    <TouchableOpacity
-                      key={c.id}
-                      onPress={() => setSelectedClassId((prev) => ({ ...prev, [student.id]: c.id }))}
-                      className={`px-3 py-1.5 rounded-full border ${selectedClassId[student.id] === c.id ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
-                    >
-                      <Text className={`text-xs font-sans-semibold ${selectedClassId[student.id] === c.id ? 'text-white' : 'text-text-muted'}`}>{c.name}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-
-              <TextInput
-                className="bg-scaffold-bg rounded-xl px-3 py-2 text-sm text-text-primary mb-3"
-                placeholder="Rejection note (optional)"
-                placeholderTextColor={COLORS.textMuted}
-                value={rejectNotes[student.id] ?? ''}
-                onChangeText={(t) => setRejectNotes((prev) => ({ ...prev, [student.id]: t }))}
-              />
-
-              <View className="flex-row gap-3">
-                <TouchableOpacity
-                  onPress={() => {
-                    const classId = selectedClassId[student.id];
-                    if (!classId) { Alert.alert('Select a class first'); return; }
-                    approveStudent.mutate({ studentId: student.id, classId });
-                  }}
-                  className="flex-1 bg-success py-3 rounded-xl items-center"
-                >
-                  <Text className="text-white font-sans-semibold text-sm">✓ Approve</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => rejectStudent.mutate({ studentId: student.id, note: rejectNotes[student.id] })}
-                  className="flex-1 bg-red-100 py-3 rounded-xl items-center"
-                >
-                  <Text className="text-error font-sans-semibold text-sm">✗ Reject</Text>
-                </TouchableOpacity>
-              </View>
-            </Card>
+            <PendingStudentCard
+              key={student.id}
+              student={student}
+              classes={classes ?? []}
+              selectedClassId={selectedClassId[student.id]}
+              rejectNote={rejectNotes[student.id] ?? ''}
+              onSelectClass={(classId) => setSelectedClassId((prev) => ({ ...prev, [student.id]: classId }))}
+              onRejectNoteChange={(t) => setRejectNotes((prev) => ({ ...prev, [student.id]: t }))}
+              onApprove={() => {
+                const classId = selectedClassId[student.id];
+                if (!classId) { Alert.alert('Select a class first'); return; }
+                approveStudent.mutate({ studentId: student.id, classId });
+              }}
+              onReject={() => rejectStudent.mutate({ studentId: student.id, note: rejectNotes[student.id] })}
+            />
           ))
         )}
 
@@ -118,29 +159,12 @@ export default function RegistrationsScreen() {
           teachersLoading ? <LoadingSpinner /> :
           !pendingTeachers?.length ? <EmptyState icon="✅" title="All clear" subtitle="No pending teacher registrations" /> :
           pendingTeachers.map((teacher) => (
-            <Card key={teacher.id} className="mb-4">
-              <View className="flex-row items-center mb-4">
-                <Avatar uri={teacher.profilePhotoUrl} name={teacher.fullName} size={52} />
-                <View className="ml-3 flex-1">
-                  <Text className="font-sans-semibold text-text-primary">{teacher.fullName}</Text>
-                  <Text className="text-xs text-text-muted">{teacher.phone ?? '—'}</Text>
-                </View>
-              </View>
-              <View className="flex-row gap-3">
-                <TouchableOpacity
-                  onPress={() => approveTeacher.mutate(teacher.id)}
-                  className="flex-1 bg-success py-3 rounded-xl items-center"
-                >
-                  <Text className="text-white font-sans-semibold text-sm">✓ Approve</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => rejectTeacher.mutate(teacher.id)}
-                  className="flex-1 bg-red-100 py-3 rounded-xl items-center"
-                >
-                  <Text className="text-error font-sans-semibold text-sm">✗ Reject</Text>
-                </TouchableOpacity>
-              </View>
-            </Card>
+            <PendingTeacherCard
+              key={teacher.id}
+              teacher={teacher}
+              onApprove={() => approveTeacher.mutate(teacher.id)}
+              onReject={() => rejectTeacher.mutate(teacher.id)}
+            />
           ))
         )}
         <View className="h-8" />

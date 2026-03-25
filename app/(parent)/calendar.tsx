@@ -54,18 +54,16 @@ export default function CalendarScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">
-      <View className="bg-navy px-5 pt-4 pb-4">
-        <Text
-          className="text-white"
-          style={{ fontSize: 20, fontFamily: 'DMSerifDisplay_400Regular' }}
-        >
+      <View className="bg-scaffold-bg px-5 pt-4 pb-5">
+        <Text className="text-xs tracking-widest uppercase mb-1" style={{ color: '#8B7D6B' }}>School Calendar</Text>
+        <Text style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}>
           Calendar 📅
         </Text>
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <Calendar
-          onDayPress={(day) => setSelectedDate(day.dateString)}
+          onDayPress={(day: { dateString: string }) => setSelectedDate(day.dateString)}
           markedDates={markedDates}
           theme={{
             backgroundColor: COLORS.white,

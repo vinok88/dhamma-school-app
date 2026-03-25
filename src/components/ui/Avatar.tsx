@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image } from 'react-native';
 import { COLORS } from '@/constants';
 
@@ -9,6 +9,12 @@ interface AvatarProps {
 }
 
 export function Avatar({ uri, name, size = 44 }: AvatarProps) {
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [uri]);
+
   const initials = name
     .split(' ')
     .map((w) => w[0])
@@ -18,12 +24,13 @@ export function Avatar({ uri, name, size = 44 }: AvatarProps) {
 
   const fontSize = Math.floor(size * 0.38);
 
-  if (uri) {
+  if (uri && !imgError) {
     return (
       <Image
         source={{ uri }}
         style={{ width: size, height: size, borderRadius: size / 2 }}
         resizeMode="cover"
+        onError={() => setImgError(true)}
       />
     );
   }

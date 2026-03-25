@@ -26,11 +26,12 @@ export default function ClassRosterScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">
-      <View className="bg-navy px-5 pt-4 pb-5">
-        <Text className="text-white" style={{ fontSize: 20, fontFamily: 'DMSerifDisplay_400Regular' }}>
+      <View className="bg-scaffold-bg px-5 pt-4 pb-5">
+        <Text className="text-xs tracking-widest uppercase mb-1" style={{ color: '#8B7D6B' }}>Class Roster</Text>
+        <Text style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}>
           {myClass?.name ?? 'My Class'} 👥
         </Text>
-        <Text className="text-blue-200 text-sm">{myClass?.gradeLevel} · {students?.length ?? 0} students</Text>
+        <Text className="text-sm" style={{ color: '#8B7D6B' }}>{myClass?.gradeLevel} · {students?.length ?? 0} students</Text>
       </View>
 
       {/* Search */}

@@ -7,10 +7,14 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { COLORS, APP_FULL_NAME } from '@/constants';
+
+// TODO: Place the Buddhist pagoda/temple watercolour illustration at assets/images/pagoda.png
+const PAGODA_IMAGE = require('../../assets/images/pagoda.png');
 
 export default function LoginScreen() {
   const { signInWithGoogle } = useAuth();
@@ -28,30 +32,40 @@ export default function LoginScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-navy">
+    <SafeAreaView className="flex-1" style={{ backgroundColor: '#FAF6F0' }}>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-        {/* Header / Brand */}
-        <View className="flex-1 items-center justify-center px-8 pt-16 pb-8">
-          {/* Logo placeholder */}
-          <View
-            className="w-24 h-24 rounded-full items-center justify-center mb-6"
-            style={{ backgroundColor: COLORS.primary }}
-          >
-            <Text style={{ fontSize: 44 }}>🙏</Text>
-          </View>
+        {/* Temple illustration */}
+        <View style={{ width: '100%', height: 280, backgroundColor: '#FAF6F0', alignItems: 'center', justifyContent: 'center' }}>
+          <Image
+            source={PAGODA_IMAGE}
+            style={{ width: '100%', height: 280 }}
+            resizeMode="contain"
+          />
+        </View>
 
+        {/* Content */}
+        <View className="flex-1 px-8 pt-8 pb-8">
           <Text
-            className="text-white text-center mb-2"
-            style={{ fontSize: 28, fontFamily: 'DMSerifDisplay_400Regular' }}
+            className="text-center mb-2"
+            style={{ fontSize: 28, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}
           >
-            Dhamma School
+            Welcome back 🙏
           </Text>
-          <Text className="text-blue-200 text-center text-sm mb-2">
-            {APP_FULL_NAME}
+          <Text style={{ color: '#8B7D6B', textAlign: 'center', fontSize: 14, marginBottom: 4 }}>
+            Sign in to manage your child's
           </Text>
-          <Text className="text-blue-300 text-center text-xs mb-16">
-            Melbourne, Australia
+          <Text style={{ color: '#8B7D6B', textAlign: 'center', fontSize: 14, marginBottom: 32 }}>
+            Dhamma School journey
           </Text>
+
+          {/* Divider */}
+          <View className="flex-row items-center mb-6">
+            <View className="flex-1 h-px" style={{ backgroundColor: '#EDE8E0' }} />
+            <Text className="mx-3 text-xs tracking-widest uppercase" style={{ color: '#8B7D6B' }}>
+              Sign in with
+            </Text>
+            <View className="flex-1 h-px" style={{ backgroundColor: '#EDE8E0' }} />
+          </View>
 
           {/* Sign-in buttons */}
           <View className="w-full gap-3">
@@ -59,15 +73,15 @@ export default function LoginScreen() {
               onPress={handleGoogleSignIn}
               disabled={loading}
               className="bg-white rounded-xl py-4 flex-row items-center justify-center"
+              style={{ borderWidth: 1, borderColor: '#EDE8E0', opacity: loading ? 0.6 : 1 }}
               activeOpacity={0.8}
-              style={{ opacity: loading ? 0.6 : 1 }}
             >
               {loading ? (
-                <ActivityIndicator size="small" color={COLORS.navy} />
+                <ActivityIndicator size="small" color={COLORS.primary} />
               ) : (
                 <>
                   <Text style={{ fontSize: 20 }}>G</Text>
-                  <Text className="ml-3 text-base font-sans-semibold text-navy">
+                  <Text className="ml-3 text-base font-sans-semibold" style={{ color: '#1C1C1E' }}>
                     Continue with Google
                   </Text>
                 </>
@@ -89,8 +103,11 @@ export default function LoginScreen() {
             )}
           </View>
 
-          <Text className="text-blue-300 text-xs text-center mt-10 px-4">
-            By signing in you agree to our Terms of Service and Privacy Policy.
+          <Text className="text-xs text-center mt-10 px-4" style={{ color: COLORS.primary }}>
+            By signing in you agree to our{' '}
+            <Text style={{ textDecorationLine: 'underline' }}>Terms of Service</Text>
+            {' & '}
+            <Text style={{ textDecorationLine: 'underline' }}>Privacy Policy</Text>
           </Text>
         </View>
       </ScrollView>

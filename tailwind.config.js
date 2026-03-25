@@ -5,18 +5,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#F34E3A',
+        primary: '#D4873A',
         navy: '#052254',
-        gold: '#F7B656',
-        cream: '#FBF4C2',
+        gold: '#E8A84C',
+        cream: '#F5EFE6',
         brown: '#614141',
         success: '#4CAF87',
         error: '#C0392B',
         pending: '#F39C12',
         'card-bg': '#FFFFFF',
-        'scaffold-bg': '#F5F5F5',
-        'text-primary': '#1A1A2E',
-        'text-muted': '#6B7280',
+        'scaffold-bg': '#FAF6F0',
+        'text-primary': '#1C1C1E',
+        'text-muted': '#8B7D6B',
       },
       fontFamily: {
         display: ['DMSerifDisplay_400Regular'],

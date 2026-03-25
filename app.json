@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#052254"
+      "backgroundColor": "#F5EFE6"
     },
     "ios": {
       "supportsTablet": false,
@@ -25,7 +25,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#052254"
+        "backgroundColor": "#FAF6F0"
       },
       "package": "org.mahamevnawa.dhamma_school",
       "versionCode": 1,
@@ -46,7 +46,7 @@
         "expo-notifications",
         {
           "icon": "./assets/images/notification-icon.png",
-          "color": "#F34E3A"
+          "color": "#D4873A"
         }
       ],
       [
