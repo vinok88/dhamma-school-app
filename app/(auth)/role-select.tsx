@@ -87,11 +87,12 @@ export default function RoleSelectScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-          {/* Temple illustration header */}
+          {/* Temple illustration header - cover fills full width, crops the icon border */}
           <ImageBackground
             source={require('../../assets/images/pagoda.png')}
-            style={{ height: 260, backgroundColor: '#F5EFE6' }}
-            resizeMode="contain"
+            style={{ height: 300, width: '100%' }}
+            resizeMode="cover"
+            imageStyle={{ top: -10 }}
           />
           <View className="px-5 pt-4 pb-6">
             <Text className="text-center text-xs tracking-widest uppercase mb-6" style={{ color: '#8B7D6B' }}>
