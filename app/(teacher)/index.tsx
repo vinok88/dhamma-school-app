@@ -28,8 +28,9 @@ export default function TeacherHome() {
   if (isPending) {
     return (
       <SafeAreaView className="flex-1 bg-scaffold-bg">
-        <View className="bg-navy px-5 pt-4 pb-6">
-          <Text className="text-white" style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular' }}>
+        <View className="bg-scaffold-bg px-5 pt-4 pb-6">
+          <Text className="text-xs tracking-widest uppercase mb-1" style={{ color: '#8B7D6B' }}>Awaiting Approval</Text>
+          <Text style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}>
             {displayName} 🙏
           </Text>
         </View>
@@ -57,11 +58,11 @@ export default function TeacherHome() {
 
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">
-      <View className="bg-navy px-5 pt-4 pb-6">
+      <View className="bg-scaffold-bg px-5 pt-4 pb-6">
         <View className="flex-row items-center justify-between">
           <View>
-            <Text className="text-blue-200 text-sm">Welcome back,</Text>
-            <Text className="text-white" style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular' }}>
+            <Text className="text-xs tracking-widest uppercase mb-1" style={{ color: '#8B7D6B' }}>Welcome back</Text>
+            <Text style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}>
               {displayName} 🙏
             </Text>
           </View>
@@ -76,22 +77,22 @@ export default function TeacherHome() {
         {classLoading ? (
           <LoadingSpinner />
         ) : myClass ? (
-          <Card className="mb-4" style={{ backgroundColor: COLORS.navy }}>
-            <Text className="text-blue-200 text-xs mb-1">Your Class</Text>
+          <Card className="mb-4" style={{ backgroundColor: COLORS.primary }}>
+            <Text className="text-xs mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>Your Class</Text>
             <Text className="text-white text-xl font-sans-semibold">{myClass.name}</Text>
-            <Text className="text-blue-200 text-sm">{myClass.gradeLevel}</Text>
+            <Text className="text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>{myClass.gradeLevel}</Text>
             <View className="flex-row mt-4 gap-4">
-              <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
+              <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
                 <Text className="text-white text-xl font-sans-semibold">{myClass.studentCount}</Text>
-                <Text className="text-blue-200 text-xs">Students</Text>
+                <Text className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>Students</Text>
               </View>
-              <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(76,175,135,0.3)' }}>
+              <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(76,175,135,0.35)' }}>
                 <Text className="text-white text-xl font-sans-semibold">{presentCount}</Text>
-                <Text className="text-blue-200 text-xs">Present Today</Text>
+                <Text className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>Present</Text>
               </View>
-              <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(192,57,43,0.3)' }}>
+              <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(192,57,43,0.35)' }}>
                 <Text className="text-white text-xl font-sans-semibold">{totalCount - presentCount}</Text>
-                <Text className="text-blue-200 text-xs">Absent</Text>
+                <Text className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>Absent</Text>
               </View>
             </View>
           </Card>
@@ -123,7 +124,7 @@ export default function TeacherHome() {
         </View>
 
         {/* Recent announcements */}
-        <Text className="font-sans-semibold text-text-primary mb-3">Recent Announcements</Text>
+        <Text className="text-xs tracking-widest uppercase mb-3" style={{ color: '#8B7D6B' }}>Recent Announcements</Text>
         {announcements?.slice(0, 3).map((a) => <AnnouncementCard key={a.id} announcement={a} />)}
 
         <View className="h-8" />

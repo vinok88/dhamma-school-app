@@ -7,7 +7,6 @@ import { AnnouncementCard } from '@/components/AnnouncementCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { AnnouncementType } from '@/types';
-import { COLORS } from '@/constants';
 
 const FILTERS: { value: AnnouncementType | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -27,8 +26,9 @@ export default function AnnouncementsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">
-      <View className="bg-navy px-5 pt-4 pb-4">
-        <Text className="text-white" style={{ fontSize: 20, fontFamily: 'DMSerifDisplay_400Regular' }}>
+      <View className="bg-scaffold-bg px-5 pt-4 pb-5">
+        <Text className="text-xs tracking-widest uppercase mb-1" style={{ color: '#8B7D6B' }}>Notice Board</Text>
+        <Text style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}>
           Announcements 📢
         </Text>
       </View>

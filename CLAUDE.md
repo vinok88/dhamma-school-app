@@ -1,4 +1,6 @@
 # Dhamma School Student Management System — Build Prompt
+## Push changes to Github
+Once a change done, do not do any github related actions. Do it only when specifivally requested.
 
 ## Mandatory Build Behaviour (Read First, Apply Always)
 

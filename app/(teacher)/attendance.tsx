@@ -123,25 +123,26 @@ export default function AttendanceScreen() {
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">
       {/* Header */}
-      <View className="bg-navy px-5 pt-4 pb-5">
-        <Text className="text-white" style={{ fontSize: 20, fontFamily: 'DMSerifDisplay_400Regular' }}>
+      <View className="bg-scaffold-bg px-5 pt-4 pb-5">
+        <Text className="text-xs tracking-widest uppercase mb-1" style={{ color: '#8B7D6B' }}>Take Attendance</Text>
+        <Text style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}>
           Attendance ✅
         </Text>
-        <Text className="text-blue-200 text-sm mt-1">
+        <Text className="text-sm mt-0.5" style={{ color: '#8B7D6B' }}>
           {myClass?.name} · {formatDate(sessionDateStr)}
         </Text>
-        <View className="flex-row mt-3 gap-4">
-          <View className="bg-white/10 rounded-xl px-4 py-2 items-center">
-            <Text className="text-white font-sans-semibold text-lg">{presentCount}</Text>
-            <Text className="text-blue-200 text-xs">Present</Text>
+        <View className="flex-row mt-3 gap-3">
+          <View className="rounded-xl px-4 py-2 items-center" style={{ backgroundColor: 'rgba(212,135,58,0.12)' }}>
+            <Text className="font-sans-semibold text-lg" style={{ color: '#D4873A' }}>{presentCount}</Text>
+            <Text className="text-xs" style={{ color: '#8B7D6B' }}>Present</Text>
           </View>
-          <View className="bg-white/10 rounded-xl px-4 py-2 items-center">
-            <Text className="text-white font-sans-semibold text-lg">{(students?.length ?? 0) - presentCount}</Text>
-            <Text className="text-blue-200 text-xs">Absent</Text>
+          <View className="rounded-xl px-4 py-2 items-center" style={{ backgroundColor: 'rgba(192,57,43,0.08)' }}>
+            <Text className="font-sans-semibold text-lg" style={{ color: '#C0392B' }}>{(students?.length ?? 0) - presentCount}</Text>
+            <Text className="text-xs" style={{ color: '#8B7D6B' }}>Absent</Text>
           </View>
-          <View className="bg-white/10 rounded-xl px-4 py-2 items-center">
-            <Text className="text-white font-sans-semibold text-lg">{students?.length ?? 0}</Text>
-            <Text className="text-blue-200 text-xs">Total</Text>
+          <View className="rounded-xl px-4 py-2 items-center" style={{ backgroundColor: 'rgba(28,28,30,0.05)' }}>
+            <Text className="font-sans-semibold text-lg" style={{ color: '#1C1C1E' }}>{students?.length ?? 0}</Text>
+            <Text className="text-xs" style={{ color: '#8B7D6B' }}>Total</Text>
           </View>
         </View>
       </View>

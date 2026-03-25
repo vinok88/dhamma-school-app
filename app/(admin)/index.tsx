@@ -46,11 +46,12 @@ export default function AdminDashboard() {
 
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">
-      <View className="bg-navy px-5 pt-4 pb-5">
-        <Text className="text-white" style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular' }}>
-          Admin Dashboard 📊
+      <View className="bg-scaffold-bg px-5 pt-4 pb-5">
+        <Text className="text-xs tracking-widest uppercase mb-1" style={{ color: '#8B7D6B' }}>Admin Overview</Text>
+        <Text style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}>
+          Dashboard 📊
         </Text>
-        <Text className="text-blue-200 text-sm">{APP_FULL_NAME}</Text>
+        <Text className="text-sm" style={{ color: '#8B7D6B' }}>{APP_FULL_NAME}</Text>
       </View>
 
       <ScrollView className="flex-1 px-4 pt-4" showsVerticalScrollIndicator={false}>
@@ -91,7 +92,7 @@ export default function AdminDashboard() {
         </Card>
 
         {/* Quick nav */}
-        <Text className="font-sans-semibold text-text-primary mb-3">Management</Text>
+        <Text className="text-xs tracking-widest uppercase mb-3" style={{ color: '#8B7D6B' }}>Management</Text>
         <View className="flex-row flex-wrap gap-3 mb-4">
           {[
             { label: 'Teachers', icon: '👩‍🏫', route: '/(admin)/teachers' },
@@ -113,7 +114,7 @@ export default function AdminDashboard() {
         </View>
 
         {/* Recent announcements */}
-        <Text className="font-sans-semibold text-text-primary mb-3">Recent Announcements</Text>
+        <Text className="text-xs tracking-widest uppercase mb-3" style={{ color: '#8B7D6B' }}>Recent Announcements</Text>
         {announcements?.slice(0, 3).map((a) => <AnnouncementCard key={a.id} announcement={a} />)}
 
         <View className="h-8" />
