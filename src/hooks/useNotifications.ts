@@ -30,6 +30,52 @@ export function useNotifications(userId: string) {
       return (data ?? []).map(mapNotification);
     },
     enabled: !!userId,
+    refetchInterval: 30_000,
+  });
+}
+
+export function useMarkNotificationRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ notificationId, userId }: { notificationId: string; userId: string }) => {
+      const { error } = await supabase
+        .from(TABLES.NOTIFICATIONS)
+        .update({ is_read: true })
+        .eq('id', notificationId);
+      if (error) throw error;
+    },
+    onSuccess: (_, { userId }) =>
+      qc.invalidateQueries({ queryKey: ['notifications', userId] }),
+  });
+}
+
+export function useDeleteNotification() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ notificationId, userId }: { notificationId: string; userId: string }) => {
+      const { error } = await supabase
+        .from(TABLES.NOTIFICATIONS)
+        .delete()
+        .eq('id', notificationId);
+      if (error) throw error;
+    },
+    onSuccess: (_, { userId }) =>
+      qc.invalidateQueries({ queryKey: ['notifications', userId] }),
+  });
+}
+
+export function useClearAllNotifications() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase
+        .from(TABLES.NOTIFICATIONS)
+        .delete()
+        .eq('user_id', userId);
+      if (error) throw error;
+    },
+    onSuccess: (_, userId) =>
+      qc.invalidateQueries({ queryKey: ['notifications', userId] }),
   });
 }
 
