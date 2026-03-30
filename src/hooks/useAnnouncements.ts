@@ -38,6 +38,7 @@ export function useAnnouncements(schoolId: string, classId?: string) {
       return (data ?? []).map(mapAnnouncement);
     },
     enabled: !!schoolId,
+    refetchInterval: 30_000,
   });
 }
 

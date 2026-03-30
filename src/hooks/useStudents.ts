@@ -41,6 +41,7 @@ export function useMyStudents(parentId: string) {
       return (data ?? []).map(mapStudent);
     },
     enabled: !!parentId,
+    refetchInterval: 30_000,
   });
 }
 
@@ -91,6 +92,7 @@ export function usePendingStudents(schoolId: string) {
       return (data ?? []).map(mapStudent);
     },
     enabled: !!schoolId,
+    refetchInterval: 30_000,
   });
 }
 
