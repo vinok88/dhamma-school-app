@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,11 +12,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/hooks/useAuth';
-import { useCreateStudent, useUpdateStudentPhoto } from '@/hooks/useStudents';
+import { useCreateStudent, useUpdateStudentPhoto, useMyStudents } from '@/hooks/useStudents';
 import { useUploadStudentPhoto } from '@/hooks/useProfile';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -41,17 +42,33 @@ export default function RegisterStudentScreen() {
   const uploadPhoto = useUploadStudentPhoto();
   const updateStudentPhoto = useUpdateStudentPhoto();
 
+  const { data: existingStudents } = useMyStudents(profile?.id ?? '');
+
   const [step, setStep] = useState(0);
   const [step1Data, setStep1Data] = useState<Step1Data | null>(null);
   const [step2Data, setStep2Data] = useState<Step2Data | null>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
 
-  const form1 = useForm<Step1Data>({ resolver: zodResolver(registerStudentStep1Schema) });
+  const form1DefaultValues: Step1Data = { firstName: '', lastName: '', preferredName: '', dob: '', gender: '' };
+  const form2DefaultValues: Step2Data = { hasAllergies: false, allergyNotes: '', photoPublishConsent: false };
+
+  const form1 = useForm<Step1Data>({ resolver: zodResolver(registerStudentStep1Schema), defaultValues: form1DefaultValues });
   const form2 = useForm<Step2Data>({
     resolver: zodResolver(registerStudentStep2Schema),
-    defaultValues: { hasAllergies: false, photoPublishConsent: false },
+    defaultValues: form2DefaultValues,
   });
 
+  useFocusEffect(
+    useCallback(() => {
+      // Reset every time screen gains focus so each visit starts clean
+      setStep(0);
+      setStep1Data(null);
+      setStep2Data(null);
+      setPhotoUri(null);
+      form1.reset(form1DefaultValues);
+      form2.reset(form2DefaultValues);
+    }, [])
+  );
   async function pickPhoto() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -65,6 +82,17 @@ export default function RegisterStudentScreen() {
 
   async function handleSubmit() {
     if (!profile || !step1Data || !step2Data) return;
+
+    // Validate no duplicate name for this parent
+    const duplicate = existingStudents?.find(
+      (s) =>
+        s.firstName.toLowerCase() === step1Data.firstName.toLowerCase() &&
+        s.lastName.toLowerCase() === step1Data.lastName.toLowerCase()
+    );
+    if (duplicate) {
+      Alert.alert('Duplicate', `A child named ${step1Data.firstName} ${step1Data.lastName} is already registered under your account.`);
+      return;
+    }
 
     // Validate age
     const age = calculateAge(step1Data.dob);
@@ -96,7 +124,18 @@ export default function RegisterStudentScreen() {
       }
 
       Alert.alert('Submitted!', 'Registration submitted. Awaiting admin approval.', [
-        { text: 'OK', onPress: () => router.back() },
+        {
+          text: 'OK',
+          onPress: () => {
+            setStep(0);
+            setStep1Data(null);
+            setStep2Data(null);
+            setPhotoUri(null);
+            form1.reset(form1DefaultValues);
+            form2.reset(form2DefaultValues);
+            router.back();
+          },
+        },
       ]);
     } catch (e: unknown) {
       Alert.alert('Error', e instanceof Error ? e.message : 'Could not submit registration');
