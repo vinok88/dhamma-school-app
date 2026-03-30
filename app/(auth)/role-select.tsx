@@ -19,6 +19,7 @@ import { TABLES, COLORS } from '@/constants';
 import { roleSelectSchema } from '@/utils/schemas';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 import { UserRole } from '@/types';
 
 type FormData = {
@@ -202,14 +203,11 @@ export default function RoleSelectScreen() {
               control={control}
               name="address"
               render={({ field }) => (
-                <Input
+                <AddressAutocomplete
                   label="Address"
                   required
                   value={field.value}
                   onChangeText={field.onChange}
-                  placeholder="15 Test St, Carlton, VIC, 3053"
-                  multiline
-                  numberOfLines={2}
                   error={errors.address?.message}
                 />
               )}

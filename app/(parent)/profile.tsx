@@ -17,6 +17,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 import { ProfileFormData } from '@/types';
 
 export default function ParentProfile() {
@@ -93,7 +94,7 @@ export default function ParentProfile() {
                   <Input label="Phone" value={field.value} onChangeText={field.onChange} keyboardType="phone-pad" />
                 )} />
                 <Controller control={control} name="address" render={({ field }) => (
-                  <Input label="Address" value={field.value} onChangeText={field.onChange} multiline numberOfLines={2} />
+                  <AddressAutocomplete label="Address" value={field.value ?? ''} onChangeText={field.onChange} />
                 )} />
                 <View className="flex-row gap-3 mt-2">
                   <View className="flex-1"><Button label="Cancel" variant="outline" onPress={() => setEditing(false)} fullWidth /></View>
