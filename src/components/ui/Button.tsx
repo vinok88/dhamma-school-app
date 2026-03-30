@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, View } from 'react-native';
 import { COLORS } from '@/constants';
 
@@ -43,10 +43,18 @@ export function Button({
   const { container, text } = variantStyles[variant];
   const { container: sizeC, text: sizeT } = sizeStyles[size];
   const isDisabled = disabled || loading;
+  const lastPressRef = useRef(0);
+
+  function handlePress() {
+    const now = Date.now();
+    if (now - lastPressRef.current < 500) return;
+    lastPressRef.current = now;
+    onPress();
+  }
 
   return (
     <TouchableOpacity
-      onPress={onPress}
+      onPress={handlePress}
       disabled={isDisabled}
       className={`flex-row items-center justify-center ${container} ${sizeC} ${fullWidth ? 'w-full' : ''} ${isDisabled ? 'opacity-50' : ''}`}
       activeOpacity={0.75}
