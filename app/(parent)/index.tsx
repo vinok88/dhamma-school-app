@@ -1,9 +1,10 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyStudents } from '@/hooks/useStudents';
+import { useNotifications } from '@/hooks/useNotifications';
 import { StudentCard } from '@/components/StudentCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -13,6 +14,25 @@ export default function ParentHome() {
   const router = useRouter();
   const { profile } = useAuth();
   const { data: students, isLoading } = useMyStudents(profile?.id ?? '');
+  const { data: notifications } = useNotifications(profile?.id ?? '');
+  const unreadCount = notifications?.filter((n) => !n.isRead).length ?? 0;
+
+  const bellAnim = useRef(new Animated.Value(0)).current;
+  const prevUnreadRef = useRef(unreadCount);
+
+  useEffect(() => {
+    if (unreadCount > prevUnreadRef.current) {
+      // Shake animation when new notifications arrive
+      Animated.sequence([
+        Animated.timing(bellAnim, { toValue: 8, duration: 60, useNativeDriver: true }),
+        Animated.timing(bellAnim, { toValue: -8, duration: 60, useNativeDriver: true }),
+        Animated.timing(bellAnim, { toValue: 6, duration: 60, useNativeDriver: true }),
+        Animated.timing(bellAnim, { toValue: -6, duration: 60, useNativeDriver: true }),
+        Animated.timing(bellAnim, { toValue: 0, duration: 60, useNativeDriver: true }),
+      ]).start();
+    }
+    prevUnreadRef.current = unreadCount;
+  }, [unreadCount]);
 
   const displayName = profile?.preferredName ?? profile?.fullName?.split(' ')[0] ?? 'there';
 
@@ -32,7 +52,29 @@ export default function ParentHome() {
             </Text>
           </View>
           <TouchableOpacity onPress={() => router.push('/notifications')} className="p-2">
-            <Text style={{ fontSize: 22 }}>🔔</Text>
+            <Animated.View style={{ transform: [{ translateX: bellAnim }] }}>
+              <Text style={{ fontSize: 22 }}>🔔</Text>
+              {unreadCount > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -4,
+                    backgroundColor: '#EF4444',
+                    borderRadius: 8,
+                    minWidth: 16,
+                    height: 16,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 3,
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontSize: 10, fontFamily: 'WorkSans_600SemiBold' }}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </Animated.View>
           </TouchableOpacity>
         </View>
       </View>
