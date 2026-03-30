@@ -49,11 +49,28 @@ Once your project is ready:
    - `supabase/migrations/007_create_events.sql`
    - `supabase/migrations/008_create_messages.sql`
    - `supabase/migrations/009_create_notifications.sql`
-   - `supabase/migrations/010_rls_policies.sql` ← **run this last**
+   - `supabase/migrations/010_rls_policies.sql`
+   - `supabase/migrations/011_storage_policies.sql`
+   - `supabase/migrations/012_fix_rls_student_insert.sql`
+   - `supabase/migrations/013_fix_rls_admin_profile_update.sql`
+   - `supabase/migrations/014_constraints_and_audit.sql` ← **run this last**
 
 > ⚠️ Order matters — each migration may depend on the previous one.
 
-### 1.3 — Enable Auth providers
+### 1.3 — Enable Realtime for live data sync
+
+The app uses Supabase Realtime to push DB changes to connected clients instantly (so data updates without a restart).
+
+1. Go to **Supabase Dashboard → Database → Replication**
+2. Enable replication for these tables:
+   - `students`
+   - `announcements`
+   - `notifications`
+   - `user_profiles`
+
+> If Realtime is not enabled, data changes (e.g. admin approving a student) won't appear until the app is restarted.
+
+### 1.4 — Enable Auth providers
 
 1. Go to **Authentication → Providers** in the left sidebar
 2. Enable **Google** — you will fill in the Client ID & Secret in Step 3
@@ -290,18 +307,38 @@ cp .env.example .env
 
 ### 4.2 — Edit the .env file
 
-Open `.env` and fill in all three values:
+Open `.env` and fill in all values:
 
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=xxxx.apps.googleusercontent.com
+EXPO_PUBLIC_GOOGLE_PLACES_API_KEY=AIzaSy...
 ```
 
 Where to find each value:
 - **SUPABASE_URL** → Supabase Dashboard → Project Settings → API → "Project URL"
 - **SUPABASE_ANON_KEY** → Supabase Dashboard → Project Settings → API → `anon public` key
 - **GOOGLE_WEB_CLIENT_ID** → Google Cloud Console → APIs & Services → Credentials → Web client ID
+- **GOOGLE_PLACES_API_KEY** → see §4.5 below
+
+### 4.5 — Set up Google Places API (address autocomplete)
+
+The address fields use Google Places Autocomplete to suggest Australian addresses while the user types. Manual typing is always possible — suggestions are optional.
+
+**Cost:** ~$0.017 per session. Google's $200/month free credit covers ~11,700 sessions/month — free at this app's scale.
+
+1. Go to [GCP Console → APIs & Services → Library](https://console.cloud.google.com/apis/library) (use the Firebase project)
+2. Search for **Places API** and click **Enable**
+3. Go to **Credentials → Create Credentials → API key**
+4. Under **API restrictions**, restrict to **Places API** only
+5. Under **Application restrictions**, choose **Android apps** and add:
+   - Package name: `org.mahamevnawa.dhamma_school`
+   - SHA-1: `87:04:E9:BD:24:13:C4:A6:05:F0:8A:5F:85:F5:DF:67:3B:BA:F9:04` (or your keystore SHA-1)
+6. Copy the key and add it to:
+   - `.env` as `EXPO_PUBLIC_GOOGLE_PLACES_API_KEY=<key>`
+   - EAS secrets: `eas env:create --environment preview --name EXPO_PUBLIC_GOOGLE_PLACES_API_KEY --value "<key>" --visibility sensitive`
+   - `eas.json` preview `env` block (so local builds pick it up)
 
 ### 4.3 — Push secrets to EAS
 
@@ -633,21 +670,32 @@ eas submit --platform ios
 
 ## Pre-launch Checklist
 
-- [ ] All migrations run on Supabase
+### Database
+- [ ] All migrations run on Supabase in order (`001` → `014`)
 - [ ] Supabase RLS policies verified (`010_rls_policies.sql`)
-- [ ] Google OAuth configured in Supabase + Google Cloud Console
-- [ ] Apple Sign-In configured (iOS — requires paid Apple Developer account)
-- [ ] `google-services.json` (Android) present in project root
-- [ ] `GoogleService-Info.plist` (iOS) present in project root
-- [ ] `.env` populated with real values (never commit this file)
-- [ ] `app.json` EAS project ID and iOS client ID filled in
-- [ ] App icon and splash screen assets replaced (placeholders are in `assets/images/`)
-- [ ] `FIREBASE_SERVICE_ACCOUNT_JSON` secret set in Supabase
-- [ ] `send-notification` Edge Function deployed
-- [ ] Supabase webhook configured to trigger Edge Function on `announcements` INSERT
-- [ ] Push notifications tested on physical iOS and Android devices
-- [ ] First admin account seeded via SQL (see Database Seeding section)
+- [ ] Realtime enabled for `students`, `announcements`, `notifications`, `user_profiles` (Dashboard → Database → Replication)
 - [ ] Default school record seeded (see migration 001)
+- [ ] First admin account seeded via SQL (see Database Seeding section)
+
+### Authentication & Sign-In
+- [ ] Google OAuth configured in Supabase + Google Cloud Console (same GCP project as Firebase)
+- [ ] Apple Sign-In configured (iOS — requires paid Apple Developer account)
+- [ ] `google-services.json` (Android) present in project root with correct SHA-1 `certificate_hash`
+- [ ] `GoogleService-Info.plist` (iOS) present in project root
+
+### Environment Variables
+- [ ] `.env` populated with all four values (never commit this file)
+- [ ] `EXPO_PUBLIC_GOOGLE_PLACES_API_KEY` added to `.env` and EAS secrets (see §4.5)
+- [ ] `app.json` EAS project ID and iOS client ID filled in
+
+### Push Notifications
+- [ ] `FIREBASE_SERVICE_ACCOUNT_JSON` secret set in Supabase Dashboard → Edge Functions → Secrets
+- [ ] `send-notification` Edge Function deployed (`supabase functions deploy send-notification`)
+- [ ] Supabase webhook configured to trigger Edge Function on `announcements` INSERT (see §2.7)
+- [ ] Push notifications tested on physical iOS and Android devices
+
+### Build & Store
+- [ ] App icon and splash screen assets replaced (placeholders are in `assets/images/`)
 - [ ] Privacy policy and terms of service URLs added to app stores
 - [ ] App store screenshots prepared (6.7" iPhone, 12.9" iPad, Pixel 8)
 
