@@ -328,13 +328,13 @@ The address fields use Google Places Autocomplete to suggest Australian addresse
 
 **Cost:** ~$0.017 per session. Google's $200/month free credit covers ~11,700 sessions/month — free at this app's scale.
 
+> **Important:** The Places API key must be a **separate key** from the Android/Firebase key. The app calls the Places REST API directly via HTTP `fetch()`, not through Play Services. If you reuse a key that has Android application restrictions (package name + SHA-1), all requests will fail with `API_KEY_ANDROID_APP_BLOCKED`.
+
 1. Go to [GCP Console → APIs & Services → Library](https://console.cloud.google.com/apis/library) (use the Firebase project)
-2. Search for **Places API** and click **Enable**
-3. Go to **Credentials → Create Credentials → API key**
-4. Under **API restrictions**, restrict to **Places API** only
-5. Under **Application restrictions**, choose **Android apps** and add:
-   - Package name: `org.mahamevnawa.dhamma_school`
-   - SHA-1: `87:04:E9:BD:24:13:C4:A6:05:F0:8A:5F:85:F5:DF:67:3B:BA:F9:04` (or your keystore SHA-1)
+2. Search for **Places API (New)** and click **Enable**
+3. Go to **Credentials → Create Credentials → API key** — create a **new, separate key** for Places
+4. Under **Application restrictions**, choose **None** (do NOT set Android app restrictions)
+5. Under **API restrictions**, select **Restrict key** and choose **Places API (New)** only
 6. Copy the key and add it to:
    - `.env` as `EXPO_PUBLIC_GOOGLE_PLACES_API_KEY=<key>`
    - EAS secrets: `eas env:create --environment preview --name EXPO_PUBLIC_GOOGLE_PLACES_API_KEY --value "<key>" --visibility sensitive`

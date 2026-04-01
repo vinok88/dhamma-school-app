@@ -72,10 +72,9 @@ export function AddressAutocomplete({
       } else {
         setSuggestions([]);
         setShowSuggestions(false);
-        if (json.error) console.warn('Places API error:', json.error.message);
       }
-    } catch (e) {
-      console.warn('AddressAutocomplete fetch error:', e);
+    } catch {
+      // Network error — silently fail, user can type manually
     } finally {
       setLoading(false);
     }
