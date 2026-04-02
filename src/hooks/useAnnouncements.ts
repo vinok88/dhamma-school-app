@@ -68,6 +68,27 @@ export function useCreateAnnouncement() {
   });
 }
 
+export interface AnnouncementViewStat {
+  user_id: string;
+  full_name: string;
+  role: string;
+  viewed: boolean;
+}
+
+export function useAnnouncementViewStats(announcementId: string) {
+  return useQuery({
+    queryKey: ['announcement-view-stats', announcementId],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_announcement_view_stats', {
+        p_announcement_id: announcementId,
+      });
+      if (error) throw error;
+      return (data ?? []) as AnnouncementViewStat[];
+    },
+    enabled: !!announcementId,
+  });
+}
+
 export function useDeleteAnnouncement() {
   const qc = useQueryClient();
   return useMutation({

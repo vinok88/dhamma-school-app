@@ -115,7 +115,15 @@ export default function AdminDashboard() {
 
         {/* Recent announcements */}
         <Text className="text-xs tracking-widest uppercase mb-3" style={{ color: '#8B7D6B' }}>Recent Announcements</Text>
-        {announcements?.slice(0, 3).map((a) => <AnnouncementCard key={a.id} announcement={a} />)}
+        {announcements?.slice(0, 3).map((a) => (
+          <TouchableOpacity
+            key={a.id}
+            activeOpacity={0.7}
+            onPress={() => router.push({ pathname: '/(admin)/announcement-stats', params: { id: a.id, title: a.title } } as never)}
+          >
+            <AnnouncementCard announcement={a} />
+          </TouchableOpacity>
+        ))}
 
         <View className="h-8" />
       </ScrollView>

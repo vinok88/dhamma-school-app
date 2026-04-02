@@ -34,6 +34,7 @@ export default function AdminLayout() {
       <Tabs.Screen name="events" options={{ href: null }} />
       <Tabs.Screen name="reports" options={{ href: null }} />
       <Tabs.Screen name="announce" options={{ href: null }} />
+      <Tabs.Screen name="announcement-stats" options={{ href: null }} />
     </Tabs>
   );
 }
