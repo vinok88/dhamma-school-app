@@ -19,6 +19,10 @@ const TYPE_ICONS: Record<string, string> = {
   attendance: '✅',
 };
 
+function isAdminOrPrincipal(role?: string) {
+  return role === 'admin' || role === 'principal';
+}
+
 function getDestination(n: NotificationModel, role?: string): string {
   switch (n.type) {
     case 'announcement':
@@ -28,11 +32,11 @@ function getDestination(n: NotificationModel, role?: string): string {
     case 'event':
       return role === 'parent' ? '/(parent)/calendar' : '/(teacher)';
     case 'registration':
-      return role === 'admin' ? '/(admin)/registrations' : '/(parent)';
+      return isAdminOrPrincipal(role) ? '/(admin)/registrations' : '/(parent)';
     case 'attendance':
       return role === 'teacher' ? '/(teacher)/attendance' : '/(parent)';
     default:
-      return role === 'teacher' ? '/(teacher)' : role === 'admin' ? '/(admin)' : '/(parent)';
+      return role === 'teacher' ? '/(teacher)' : isAdminOrPrincipal(role) ? '/(admin)' : '/(parent)';
   }
 }
 

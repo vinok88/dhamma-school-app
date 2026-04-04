@@ -5,18 +5,29 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
 import { COLORS } from '@/constants';
 
-const MENU_ITEMS = [
+const SHARED_ITEMS = [
   { label: 'Teachers', icon: '👩‍🏫', route: '/(admin)/teachers', desc: 'Manage teacher accounts' },
-  { label: 'Manage Admins', icon: '🔑', route: '/(admin)/admins', desc: 'Promote or remove administrators' },
   { label: 'Events', icon: '📅', route: '/(admin)/events', desc: 'School events & calendar' },
   { label: 'Reports', icon: '📋', route: '/(admin)/reports', desc: 'Attendance reports & export' },
   { label: 'Announcements', icon: '📢', route: '/(admin)/announce', desc: 'Compose & send notices' },
   { label: 'Notifications', icon: '🔔', route: '/notifications', desc: 'View your notifications' },
 ];
 
+const ADMIN_ONLY = { label: 'Manage Admins', icon: '🔑', route: '/(admin)/admins', desc: 'Promote or remove administrators & principals' };
+const PRINCIPAL_ONLY = { label: 'Manage Users', icon: '👥', route: '/(admin)/manage-users', desc: 'Change roles or remove users' };
+
 export default function MoreScreen() {
   const router = useRouter();
   const { profile, signOut } = useAuth();
+  const isAdmin = profile?.role === 'admin';
+
+  const menuItems = [
+    SHARED_ITEMS[0], // Teachers
+    isAdmin ? ADMIN_ONLY : PRINCIPAL_ONLY,
+    ...SHARED_ITEMS.slice(1), // Events, Reports, Announcements, Notifications
+  ];
+
+  const roleLabel = isAdmin ? 'Admin' : 'Principal';
 
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">
@@ -25,7 +36,7 @@ export default function MoreScreen() {
       </View>
 
       <ScrollView className="flex-1 px-4 pt-4">
-        {MENU_ITEMS.map((item) => (
+        {menuItems.map((item) => (
           <TouchableOpacity
             key={item.label}
             onPress={() => router.push(item.route as never)}
@@ -60,7 +71,7 @@ export default function MoreScreen() {
         </View>
 
         <Text className="text-center text-xs text-text-muted mt-6 mb-2">
-          {profile?.fullName} · Admin
+          {profile?.fullName} · {roleLabel}
         </Text>
         <View className="h-8" />
       </ScrollView>

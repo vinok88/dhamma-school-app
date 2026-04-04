@@ -1,6 +1,6 @@
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
-export type UserRole = 'parent' | 'teacher' | 'admin';
+export type UserRole = 'parent' | 'teacher' | 'admin' | 'principal';
 export type UserStatus = 'active' | 'inactive' | 'pending';
 export type StudentStatus =
   | 'pending'

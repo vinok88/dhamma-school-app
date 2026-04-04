@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 
 export const roleSelectSchema = z.object({
-  role: z.enum(['parent', 'teacher', 'admin']),
+  role: z.enum(['parent', 'teacher', 'admin', 'principal']),
   fullName: z.string()
     .min(2, 'Full name is required')
     .refine(

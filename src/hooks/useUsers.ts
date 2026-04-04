@@ -37,13 +37,31 @@ export function useAllUsers(schoolId: string) {
   });
 }
 
-export function usePromoteToAdmin() {
+export function useChangeUserRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
+      const { error } = await supabase
+        .from(TABLES.USER_PROFILES)
+        .update({ role, status: 'active', updated_at: new Date().toISOString() })
+        .eq('id', userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] });
+      qc.invalidateQueries({ queryKey: ['teachers'] });
+      qc.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
+}
+
+export function useDeactivateUser() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (userId: string) => {
       const { error } = await supabase
         .from(TABLES.USER_PROFILES)
-        .update({ role: 'admin', status: 'active', updated_at: new Date().toISOString() })
+        .update({ status: 'inactive', updated_at: new Date().toISOString() })
         .eq('id', userId);
       if (error) throw error;
     },
@@ -54,20 +72,21 @@ export function usePromoteToAdmin() {
   });
 }
 
+// Legacy aliases for backward compat
+export function usePromoteToAdmin() {
+  const changeRole = useChangeUserRole();
+  return {
+    ...changeRole,
+    mutate: (userId: string) => changeRole.mutate({ userId, role: 'admin' }),
+    mutateAsync: (userId: string) => changeRole.mutateAsync({ userId, role: 'admin' }),
+  };
+}
+
 export function useDemoteAdmin() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (userId: string) => {
-      // Revert to parent role (safe default) with active status
-      const { error } = await supabase
-        .from(TABLES.USER_PROFILES)
-        .update({ role: 'parent', status: 'active', updated_at: new Date().toISOString() })
-        .eq('id', userId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['users'] });
-      qc.invalidateQueries({ queryKey: ['teachers'] });
-    },
-  });
+  const changeRole = useChangeUserRole();
+  return {
+    ...changeRole,
+    mutate: (userId: string) => changeRole.mutate({ userId, role: 'parent' }),
+    mutateAsync: (userId: string) => changeRole.mutateAsync({ userId, role: 'parent' }),
+  };
 }

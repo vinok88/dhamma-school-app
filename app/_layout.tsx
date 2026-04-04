@@ -77,7 +77,7 @@ function RootLayoutNav() {
       if (!inCorrectRoute) {
         if (role === 'parent') router.replace('/(parent)');
         else if (role === 'teacher') router.replace('/(teacher)');
-        else if (role === 'admin') router.replace('/(admin)');
+        else router.replace('/(admin)'); // admin + principal
       }
     }
   }, [session, profile, loading]);
