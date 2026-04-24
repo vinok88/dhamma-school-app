@@ -9,7 +9,9 @@ import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { UserDetailModal } from '@/components/ui/UserDetailModal';
 import { COLORS } from '@/constants';
+import { UserModel } from '@/types';
 
 export default function TeachersScreen() {
   const router = useRouter();
@@ -17,6 +19,7 @@ export default function TeachersScreen() {
   const { data: teachers, isLoading } = useTeachers(profile?.schoolId ?? '');
   const deactivate = useDeactivateTeacher();
   const [search, setSearch] = useState('');
+  const [selectedUser, setSelectedUser] = useState<UserModel | null>(null);
 
   const filtered = (teachers ?? []).filter((t) =>
     t.fullName.toLowerCase().includes(search.toLowerCase())
@@ -46,7 +49,9 @@ export default function TeachersScreen() {
           keyExtractor={(t) => t.id}
           contentContainerStyle={{ padding: 16, gap: 8 }}
           renderItem={({ item: t }) => (
-            <View
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setSelectedUser(t as unknown as UserModel)}
               className="bg-white rounded-2xl p-4 flex-row items-center"
               style={{ shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}
             >
@@ -75,10 +80,11 @@ export default function TeachersScreen() {
                   <Text className="text-xs text-error">Deactivate</Text>
                 </TouchableOpacity>
               )}
-            </View>
+            </TouchableOpacity>
           )}
         />
       )}
+      <UserDetailModal visible={!!selectedUser} user={selectedUser} onClose={() => setSelectedUser(null)} />
     </SafeAreaView>
   );
 }

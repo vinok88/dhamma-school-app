@@ -186,3 +186,72 @@ Brand colours:
 - No sensitive data in `.env` committed to version control
 - Image access via **signed URLs** (1-hour expiry) from Supabase Storage
 - Parent-to-parent messaging blocked via RLS policy
+
+---
+
+## Testing
+
+| Layer | Tooling |
+|-------|---------|
+| Test runner | `jest` with `jest-expo` preset |
+| Renderer | `@testing-library/react-native` v12 |
+| Matchers | `@testing-library/jest-native` |
+| CI | GitHub Actions ([.github/workflows/ci.yml](./.github/workflows/ci.yml)) |
+
+### Babel override for tests
+
+[babel.config.js](./babel.config.js) detects `NODE_ENV === 'test'` and
+skips the NativeWind / `react-native-css-interop` plugins. Those plugins
+rewrite `jest.mock()` factories with out-of-scope helper variables, which
+breaks Jest's hoisting. The production build keeps them.
+
+### Global mocks
+
+[jest.setup.ts](./jest.setup.ts) provides stubs for:
+
+- Expo modules: `expo-secure-store`, `expo-image-picker`, `expo-image`,
+  `expo-notifications`, `expo-file-system`, `expo-linking`, `expo-router`
+- Native wrappers: `react-native-reanimated`, `react-native-safe-area-context`,
+  `@react-navigation/native`, `react-native-svg`
+- UI libraries: `react-native-chart-kit`, `react-native-calendars`,
+  `react-native-modal-datetime-picker`, `@react-native-community/datetimepicker`,
+  `react-native-google-places-autocomplete`
+- Auth: `@react-native-google-signin/google-signin`
+- App-level UI primitives: `Avatar`, `Badge`, `LoadingSpinner`, `EmptyState`,
+  `ScreenHeader`, `UserDetailModal`, `AddressAutocomplete`, `DatePicker`
+
+Screen tests therefore only mock the **domain hooks** they consume
+(`useStudents`, `useAttendance`, `useAnnouncements`, etc.).
+
+### Shared helpers
+
+- [src/test-utils/render.tsx](./src/test-utils/render.tsx) — `renderScreen(ui)`
+  wraps the UI in a fresh `QueryClientProvider` with retries disabled and
+  zero cache time, so each test starts from a clean state.
+- [src/test-utils/fixtures.ts](./src/test-utils/fixtures.ts) — profile
+  fixtures (`adminProfile`, `parentProfile`, `teacherProfile`,
+  `principalProfile`), data builders (`makeStudent`), and query/mutation
+  helpers (`queryOk`, `queryLoading`, `mutationStub`).
+
+### Pattern for screen tests
+
+1. Mock `useAuth` to return the role-appropriate profile.
+2. Mock the domain hooks used by the screen; use `jest.fn()` at the top
+   and set return values per-test with `(useHook as jest.Mock).mockReturnValue(...)`.
+3. Name any shared mock reference `mock*` (Jest hoists factories and only
+   allows this prefix).
+4. Reference fixtures inside `jest.mock()` factories via an inline
+   `require('@/test-utils/fixtures')` — top-level imports run after the
+   hoisted factory.
+5. Assert on rendered text, placeholders (`getByPlaceholderText`), or
+   `testID` attributes from the UI primitive mocks (e.g. `empty-state`,
+   `loading-spinner`, `screen-header`).
+
+### Running
+
+```bash
+npm test              # single run
+npm run test:watch    # watch mode
+npm run test:ci       # silent + coverage (used by CI)
+npm run typecheck     # strict tsc --noEmit
+```

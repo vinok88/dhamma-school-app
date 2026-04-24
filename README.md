@@ -122,6 +122,84 @@ npx expo start --ios
 
 ---
 
+## Testing
+
+The project uses **Jest** with the `jest-expo` preset and **@testing-library/react-native** for component/screen tests.
+
+### Commands
+
+```bash
+npm test              # run the full suite once
+npm run test:watch    # watch mode (re-runs on file changes)
+npm run test:ci       # CI-friendly: silent + coverage
+npm run typecheck     # strict TypeScript type checking
+```
+
+CI runs `typecheck`, `lint`, and `test:ci` on every push / PR to `main`
+(see [.github/workflows/ci.yml](./.github/workflows/ci.yml)).
+
+### Test layout
+
+Tests sit in `__tests__/` folders next to the source they cover:
+
+```
+app/(admin)/__tests__/        # admin screen smoke tests
+app/(auth)/__tests__/         # login / role selection
+app/(parent)/__tests__/       # parent-facing screens
+app/(teacher)/__tests__/      # teacher-facing screens
+app/__tests__/                # top-level screens (notifications)
+app/messages/__tests__/       # message thread
+src/hooks/__tests__/          # hook unit tests
+src/test-utils/               # shared helpers (render, fixtures)
+```
+
+Global mocks for Expo native modules, NativeWind, Reanimated, Supabase,
+`expo-router`, charting, and calendar libraries live in
+[jest.setup.ts](./jest.setup.ts). Individual tests only need to mock the
+**domain hooks** the screen consumes.
+
+### Writing a new screen test
+
+Use the shared helpers:
+
+```tsx
+import { renderScreen } from '@/test-utils/render';
+import { queryOk, parentProfile } from '@/test-utils/fixtures';
+
+jest.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({ profile: require('@/test-utils/fixtures').parentProfile }),
+}));
+
+jest.mock('@/hooks/useStudents', () => ({
+  useMyStudents: jest.fn(),
+}));
+
+import MyScreen from '../my-screen';
+import { useMyStudents } from '@/hooks/useStudents';
+
+it('renders student list', () => {
+  (useMyStudents as jest.Mock).mockReturnValue(queryOk([/* ... */]));
+  renderScreen(<MyScreen />);
+  // ... assertions
+});
+```
+
+Conventions:
+
+- **`renderScreen()`** wraps the tree in a fresh `QueryClientProvider`
+  with retries disabled — use it instead of RNTL's bare `render`.
+- **Fixture builders** (`adminProfile`, `parentProfile`, `teacherProfile`,
+  `makeStudent`, `queryOk`, `queryLoading`, `mutationStub`) live in
+  [src/test-utils/fixtures.ts](./src/test-utils/fixtures.ts).
+- Mock variables referenced inside `jest.mock()` factories **must start
+  with `mock`** (e.g. `mockPush`, `mockMutate`) — Jest hoists the factory
+  and only allows this prefix through.
+- Inside a `jest.mock()` factory, reference fixtures with an inline
+  `require('@/test-utils/fixtures')` — they can't be imported at the top
+  of the file because the factory is hoisted above imports.
+
+---
+
 ## Building for Production
 
 ### Using EAS Build (recommended)

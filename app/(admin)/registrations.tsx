@@ -10,10 +10,12 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { UserDetailModal } from '@/components/ui/UserDetailModal';
 import { formatDate, formatAge } from '@/utils/date';
 import { COLORS } from '@/constants';
+import { UserModel, StudentModel } from '@/types';
 
-function PendingStudentCard({ student, classes, selectedClassId, rejectNote, onSelectClass, onRejectNoteChange, onApprove, onReject }: {
+function PendingStudentCard({ student, classes, selectedClassId, rejectNote, onSelectClass, onRejectNoteChange, onApprove, onReject, onTapAvatar }: {
   student: any;
   classes: any[];
   selectedClassId?: string;
@@ -22,11 +24,12 @@ function PendingStudentCard({ student, classes, selectedClassId, rejectNote, onS
   onRejectNoteChange: (t: string) => void;
   onApprove: () => void;
   onReject: () => void;
+  onTapAvatar: () => void;
 }) {
   const { data: signedPhotoUrl } = useStudentPhotoUrl(student.photoUrl);
   return (
     <Card className="mb-4">
-      <View className="flex-row items-center mb-3">
+      <TouchableOpacity activeOpacity={0.7} onPress={onTapAvatar} className="flex-row items-center mb-3">
         <Avatar uri={signedPhotoUrl ?? undefined} name={`${student.firstName} ${student.lastName}`} size={52} />
         <View className="ml-3 flex-1">
           <Text className="font-sans-semibold text-text-primary">{student.firstName} {student.lastName}</Text>
@@ -34,7 +37,7 @@ function PendingStudentCard({ student, classes, selectedClassId, rejectNote, onS
           <Text className="text-xs text-text-muted">Parent: {student.parentName ?? '—'}</Text>
           {student.hasAllergies && <Text className="text-xs text-error mt-0.5">⚠️ Has allergies</Text>}
         </View>
-      </View>
+      </TouchableOpacity>
       <Text className="text-xs font-sans-semibold text-text-muted mb-1">Assign to Class</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
         <View className="flex-row gap-2">
@@ -68,17 +71,17 @@ function PendingStudentCard({ student, classes, selectedClassId, rejectNote, onS
   );
 }
 
-function PendingTeacherCard({ teacher, onApprove, onReject }: { teacher: any; onApprove: () => void; onReject: () => void }) {
+function PendingTeacherCard({ teacher, onApprove, onReject, onTapAvatar }: { teacher: any; onApprove: () => void; onReject: () => void; onTapAvatar: () => void }) {
   const { data: signedPhotoUrl } = useProfilePhotoUrl(teacher.profilePhotoUrl);
   return (
     <Card className="mb-4">
-      <View className="flex-row items-center mb-4">
+      <TouchableOpacity activeOpacity={0.7} onPress={onTapAvatar} className="flex-row items-center mb-4">
         <Avatar uri={signedPhotoUrl ?? undefined} name={teacher.fullName} size={52} />
         <View className="ml-3 flex-1">
           <Text className="font-sans-semibold text-text-primary">{teacher.fullName}</Text>
           <Text className="text-xs text-text-muted">{teacher.phone ?? '—'}</Text>
         </View>
-      </View>
+      </TouchableOpacity>
       <View className="flex-row gap-3">
         <TouchableOpacity onPress={onApprove} className="flex-1 bg-success py-3 rounded-xl items-center">
           <Text className="text-white font-sans-semibold text-sm">✓ Approve</Text>
@@ -107,6 +110,8 @@ export default function RegistrationsScreen() {
 
   const [selectedClassId, setSelectedClassId] = useState<Record<string, string>>({});
   const [rejectNotes, setRejectNotes] = useState<Record<string, string>>({});
+  const [selectedStudent, setSelectedStudent] = useState<StudentModel | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserModel | null>(null);
 
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">
@@ -151,6 +156,7 @@ export default function RegistrationsScreen() {
                 approveStudent.mutate({ studentId: student.id, classId });
               }}
               onReject={() => rejectStudent.mutate({ studentId: student.id, note: rejectNotes[student.id] })}
+              onTapAvatar={() => setSelectedStudent(student as unknown as StudentModel)}
             />
           ))
         )}
@@ -164,11 +170,18 @@ export default function RegistrationsScreen() {
               teacher={teacher}
               onApprove={() => approveTeacher.mutate(teacher.id)}
               onReject={() => rejectTeacher.mutate(teacher.id)}
+              onTapAvatar={() => setSelectedUser(teacher as unknown as UserModel)}
             />
           ))
         )}
         <View className="h-8" />
       </ScrollView>
+      <UserDetailModal
+        visible={!!selectedStudent || !!selectedUser}
+        student={selectedStudent}
+        user={selectedUser}
+        onClose={() => { setSelectedStudent(null); setSelectedUser(null); }}
+      />
     </SafeAreaView>
   );
 }

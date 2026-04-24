@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { UserDetailModal } from '@/components/ui/UserDetailModal';
 import { COLORS } from '@/constants';
 import { UserModel } from '@/types';
 
@@ -24,6 +25,7 @@ export default function AdminsScreen() {
   const changeRole = useChangeUserRole();
   const [search, setSearch] = useState('');
   const [promoteRole, setPromoteRole] = useState<'admin' | 'principal'>('principal');
+  const [selectedUser, setSelectedUser] = useState<UserModel | null>(null);
 
   const elevated = (users ?? []).filter((u) => u.role === 'admin' || u.role === 'principal');
   const nonElevated = (users ?? []).filter(
@@ -89,8 +91,10 @@ export default function AdminsScreen() {
               elevated.map((user) => {
                 const rc = ROLE_COLORS[user.role] ?? ROLE_COLORS.parent;
                 return (
-                  <View
+                  <TouchableOpacity
                     key={user.id}
+                    activeOpacity={0.7}
+                    onPress={() => setSelectedUser(user)}
                     className="bg-white rounded-2xl p-4 mb-3 flex-row items-center"
                     style={{ shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}
                   >
@@ -113,7 +117,7 @@ export default function AdminsScreen() {
                         <Text className="text-xs text-error">Remove</Text>
                       </TouchableOpacity>
                     )}
-                  </View>
+                  </TouchableOpacity>
                 );
               })
             )}
@@ -158,8 +162,10 @@ export default function AdminsScreen() {
               nonElevated.map((user) => {
                 const rc = ROLE_COLORS[user.role] ?? ROLE_COLORS.parent;
                 return (
-                  <View
+                  <TouchableOpacity
                     key={user.id}
+                    activeOpacity={0.7}
+                    onPress={() => setSelectedUser(user)}
                     className="bg-white rounded-2xl p-4 mb-3 flex-row items-center"
                     style={{ shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}
                   >
@@ -177,7 +183,7 @@ export default function AdminsScreen() {
                     >
                       <Text className="text-xs text-success font-sans-semibold">Promote</Text>
                     </TouchableOpacity>
-                  </View>
+                  </TouchableOpacity>
                 );
               })
             )}
@@ -185,6 +191,7 @@ export default function AdminsScreen() {
           </View>
         }
       />
+      <UserDetailModal visible={!!selectedUser} user={selectedUser} onClose={() => setSelectedUser(null)} />
     </SafeAreaView>
   );
 }

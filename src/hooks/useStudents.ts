@@ -23,6 +23,8 @@ function mapStudent(d: Record<string, unknown>): StudentModel {
     statusNote: d.status_note as string | undefined,
     parentName: (d.user_profiles as Record<string, unknown>)?.full_name as string | undefined,
     parentPhone: (d.user_profiles as Record<string, unknown>)?.phone as string | undefined,
+    parentEmail: undefined, // email lives on auth.users, not user_profiles
+    parentAddress: (d.user_profiles as Record<string, unknown>)?.address as string | undefined,
     createdAt: d.created_at as string,
     updatedAt: d.updated_at as string,
   };
@@ -51,7 +53,7 @@ export function useClassStudents(classId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from(TABLES.STUDENTS)
-        .select('*, user_profiles(full_name, phone)')
+        .select('*, user_profiles(full_name, phone, address)')
         .eq('class_id', classId)
         .eq('status', 'active')
         .order('first_name');
@@ -68,7 +70,7 @@ export function useAllStudents(schoolId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from(TABLES.STUDENTS)
-        .select('*, classes(name), user_profiles(full_name, phone)')
+        .select('*, classes(name), user_profiles(full_name, phone, address)')
         .eq('school_id', schoolId)
         .order('first_name');
       if (error) throw error;
@@ -84,7 +86,7 @@ export function usePendingStudents(schoolId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from(TABLES.STUDENTS)
-        .select('*, user_profiles(full_name, phone)')
+        .select('*, user_profiles(full_name, phone, address)')
         .eq('school_id', schoolId)
         .in('status', ['pending', 'under_review'])
         .order('created_at');
@@ -102,7 +104,7 @@ export function useStudentDetail(studentId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from(TABLES.STUDENTS)
-        .select('*, classes(name), user_profiles(full_name, phone)')
+        .select('*, classes(name), user_profiles(full_name, phone, address)')
         .eq('id', studentId)
         .single();
       if (error) throw error;

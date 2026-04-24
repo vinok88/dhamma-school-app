@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { UserDetailModal } from '@/components/ui/UserDetailModal';
 import { COLORS } from '@/constants';
 import { UserModel } from '@/types';
 
@@ -22,6 +23,7 @@ export default function ManageUsersScreen() {
   const changeRole = useChangeUserRole();
   const deactivateUser = useDeactivateUser();
   const [search, setSearch] = useState('');
+  const [selectedUser, setSelectedUser] = useState<UserModel | null>(null);
 
   // Only show parents and teachers, exclude self
   const filtered = (users ?? []).filter(
@@ -114,7 +116,9 @@ export default function ManageUsersScreen() {
             const rc = ROLE_COLORS[user.role] ?? ROLE_COLORS.parent;
             const toggleLabel = user.role === 'parent' ? 'Make Teacher' : 'Make Parent';
             return (
-              <View
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setSelectedUser(user)}
                 className="bg-white rounded-2xl p-4 mb-3"
                 style={{ shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}
               >
@@ -142,11 +146,12 @@ export default function ManageUsersScreen() {
                     <Text className="text-xs font-sans-semibold text-error">Remove</Text>
                   </TouchableOpacity>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           }}
         />
       )}
+      <UserDetailModal visible={!!selectedUser} user={selectedUser} onClose={() => setSelectedUser(null)} />
     </SafeAreaView>
   );
 }

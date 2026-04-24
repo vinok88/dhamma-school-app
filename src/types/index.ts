@@ -51,6 +51,8 @@ export interface StudentModel {
   statusNote?: string;
   parentName?: string;
   parentPhone?: string;
+  parentEmail?: string;
+  parentAddress?: string;
   createdAt: string;
   updatedAt: string;
 }

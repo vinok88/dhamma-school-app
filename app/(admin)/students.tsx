@@ -8,16 +8,19 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { UserDetailModal } from '@/components/ui/UserDetailModal';
 import { formatAge } from '@/utils/date';
 import { COLORS } from '@/constants';
-import { StudentStatus } from '@/types';
+import { StudentModel, StudentStatus } from '@/types';
 
 const STATUS_FILTERS: (StudentStatus | 'all')[] = ['all', 'active', 'pending', 'under_review', 'inactive', 'dropped'];
 
-function StudentRow({ student: s, onStatusChange }: { student: any; onStatusChange: (id: string, status: StudentStatus) => void }) {
+function StudentRow({ student: s, onStatusChange, onPress }: { student: any; onStatusChange: (id: string, status: StudentStatus) => void; onPress: () => void }) {
   const { data: signedPhotoUrl } = useStudentPhotoUrl(s.photoUrl);
   return (
-    <View
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={() => onPress()}
       className="bg-white rounded-2xl p-4 flex-row items-center"
       style={{ shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}
     >
@@ -36,7 +39,7 @@ function StudentRow({ student: s, onStatusChange }: { student: any; onStatusChan
       >
         <Text className="text-xs text-text-muted">⋮</Text>
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -46,6 +49,8 @@ export default function StudentsScreen() {
   const updateStatus = useUpdateStudentStatus();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StudentStatus | 'all'>('all');
+  const [selectedStudent, setSelectedStudent] = useState<StudentModel | null>(null);
+  const [selectedStudentPhotoUrl, setSelectedStudentPhotoUrl] = useState<string | null>(null);
 
   const filtered = (students ?? []).filter((s) => {
     const q = search.toLowerCase();
@@ -118,10 +123,19 @@ export default function StudentsScreen() {
           keyExtractor={(s) => s.id}
           contentContainerStyle={{ padding: 16, gap: 8 }}
           renderItem={({ item: s }) => (
-            <StudentRow student={s} onStatusChange={confirmStatusChange} />
+            <StudentRow
+              student={s}
+              onStatusChange={confirmStatusChange}
+              onPress={() => setSelectedStudent(s as unknown as StudentModel)}
+            />
           )}
         />
       )}
+      <UserDetailModal
+        visible={!!selectedStudent}
+        student={selectedStudent}
+        onClose={() => { setSelectedStudent(null); setSelectedStudentPhotoUrl(null); }}
+      />
     </SafeAreaView>
   );
 }
