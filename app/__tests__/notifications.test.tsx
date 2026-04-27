@@ -53,6 +53,8 @@ describe('NotificationsScreen', () => {
     expect(screen.getByText('New announcement')).toBeTruthy();
     fireEvent.press(screen.getByText('New announcement'));
     expect(mockDelete).toHaveBeenCalled();
-    expect(mockPush).toHaveBeenCalledWith('/(parent)/announcements');
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.objectContaining({ pathname: '/(parent)/feed' })
+    );
   });
 });

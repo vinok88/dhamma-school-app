@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/query-client';
@@ -9,6 +9,7 @@ import { WorkSans_400Regular, WorkSans_500Medium, WorkSans_600SemiBold } from '@
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '@/lib/supabase';
+import { destinationFromPushData, NotificationData } from '@/lib/notification-routes';
 
 import '../src/styles/globals.css';
 
@@ -60,6 +61,43 @@ function RootLayoutNav() {
     })();
   }, [session, profile?.id]);
 
+  // Handle OS push-notification taps (foreground, background, and cold start).
+  // The cold-start case stores the data and replays it once the profile is loaded.
+  const pendingNavRef = useRef<NotificationData | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (!mounted || !response) return;
+      const data = response.notification.request.content.data as NotificationData;
+      pendingNavRef.current = data;
+    });
+
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as NotificationData;
+      const dest = destinationFromPushData(data, profile?.role);
+      if (dest) router.push(dest as any);
+      else pendingNavRef.current = data;
+    });
+
+    return () => {
+      mounted = false;
+      sub.remove();
+    };
+  }, [profile?.role]);
+
+  // Replay any pending notification once profile finishes loading
+  useEffect(() => {
+    if (!profile || !pendingNavRef.current) return;
+    const dest = destinationFromPushData(pendingNavRef.current, profile.role);
+    pendingNavRef.current = null;
+    if (dest) {
+      // Defer one tick so the role-based redirect below settles first
+      setTimeout(() => router.push(dest as any), 0);
+    }
+  }, [profile?.id]);
+
   useEffect(() => {
     if (loading) return;
 
@@ -68,15 +106,20 @@ function RootLayoutNav() {
     if (!session) {
       if (!inAuth) router.replace('/(auth)/login');
     } else if (!profile) {
-      router.replace('/(auth)/role-select');
+      router.replace('/(auth)/complete-profile');
     } else {
       const role = profile.role;
-      const expectedSegment = role === 'parent' ? '(parent)' : role === 'teacher' ? '(teacher)' : '(admin)';
+      const expectedSegment =
+        role === 'parent' ? '(parent)'
+        : role === 'teacher' ? '(teacher)'
+        : role === 'guest' ? '(guest)'
+        : '(admin)';
       const inCorrectRoute = segments[0] === expectedSegment;
 
       if (!inCorrectRoute) {
         if (role === 'parent') router.replace('/(parent)');
         else if (role === 'teacher') router.replace('/(teacher)');
+        else if (role === 'guest') router.replace('/(guest)');
         else router.replace('/(admin)'); // admin + principal
       }
     }
@@ -90,6 +133,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(parent)" />
       <Stack.Screen name="(teacher)" />
       <Stack.Screen name="(admin)" />
+      <Stack.Screen name="(guest)" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="messages/[recipientId]" />
     </Stack>

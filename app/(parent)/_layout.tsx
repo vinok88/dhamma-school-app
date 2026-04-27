@@ -28,12 +28,8 @@ export default function ParentLayout() {
         options={{ title: 'Home', tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} /> }}
       />
       <Tabs.Screen
-        name="calendar"
-        options={{ title: 'Calendar', tabBarIcon: ({ focused }) => <TabIcon emoji="📅" focused={focused} /> }}
-      />
-      <Tabs.Screen
-        name="announcements"
-        options={{ title: 'Notice', tabBarIcon: ({ focused }) => <TabIcon emoji="📢" focused={focused} /> }}
+        name="feed"
+        options={{ title: 'Notice Board', tabBarIcon: ({ focused }) => <TabIcon emoji="📢" focused={focused} /> }}
       />
       <Tabs.Screen
         name="messages"
@@ -44,8 +40,8 @@ export default function ParentLayout() {
         options={{ title: 'Profile', tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} /> }}
       />
       {/* Hidden screens */}
-      <Tabs.Screen name="register-student" options={{ href: null }} />
       <Tabs.Screen name="student/[id]" options={{ href: null }} />
+      <Tabs.Screen name="student-edit" options={{ href: null }} />
     </Tabs>
   );
 }

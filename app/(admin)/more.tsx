@@ -6,6 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { COLORS } from '@/constants';
 
 const SHARED_ITEMS = [
+  { label: 'Add Student', icon: '➕', route: '/(admin)/add-student', desc: 'Register a child and link parent emails' },
+  { label: 'Add Teacher', icon: '📨', route: '/(admin)/add-teacher', desc: 'Invite a teacher by email' },
   { label: 'Teachers', icon: '👩‍🏫', route: '/(admin)/teachers', desc: 'Manage teacher accounts' },
   { label: 'Events', icon: '📅', route: '/(admin)/events', desc: 'School events & calendar' },
   { label: 'Reports', icon: '📋', route: '/(admin)/reports', desc: 'Attendance reports & export' },
@@ -22,9 +24,11 @@ export default function MoreScreen() {
   const isAdmin = profile?.role === 'admin';
 
   const menuItems = [
-    SHARED_ITEMS[0], // Teachers
+    SHARED_ITEMS[0], // Add Student
+    SHARED_ITEMS[1], // Add Teacher
+    SHARED_ITEMS[2], // Teachers
     isAdmin ? ADMIN_ONLY : PRINCIPAL_ONLY,
-    ...SHARED_ITEMS.slice(1), // Events, Reports, Announcements, Notifications
+    ...SHARED_ITEMS.slice(3), // Events, Reports, Announcements, Notifications
   ];
 
   const roleLabel = isAdmin ? 'Admin' : 'Principal';

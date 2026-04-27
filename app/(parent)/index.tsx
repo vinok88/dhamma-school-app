@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Animated } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Animated, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,17 +12,17 @@ import { COLORS } from '@/constants';
 
 export default function ParentHome() {
   const router = useRouter();
-  const { profile } = useAuth();
-  const { data: students, isLoading } = useMyStudents(profile?.id ?? '');
+  const { profile, refreshMyRole } = useAuth();
+  const { data: students, isLoading, refetch: refetchStudents } = useMyStudents(profile?.id ?? '');
   const { data: notifications } = useNotifications(profile?.id ?? '');
   const unreadCount = notifications?.filter((n) => !n.isRead).length ?? 0;
+  const [refreshingRole, setRefreshingRole] = useState(false);
 
   const bellAnim = useRef(new Animated.Value(0)).current;
   const prevUnreadRef = useRef(unreadCount);
 
   useEffect(() => {
     if (unreadCount > prevUnreadRef.current) {
-      // Shake animation when new notifications arrive
       Animated.sequence([
         Animated.timing(bellAnim, { toValue: 8, duration: 60, useNativeDriver: true }),
         Animated.timing(bellAnim, { toValue: -8, duration: 60, useNativeDriver: true }),
@@ -34,11 +34,22 @@ export default function ParentHome() {
     prevUnreadRef.current = unreadCount;
   }, [unreadCount]);
 
+  async function handleRefresh() {
+    setRefreshingRole(true);
+    try {
+      await refreshMyRole();
+      await refetchStudents();
+    } catch (e: unknown) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Could not refresh');
+    } finally {
+      setRefreshingRole(false);
+    }
+  }
+
   const displayName = profile?.preferredName ?? profile?.fullName?.split(' ')[0] ?? 'there';
 
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">
-      {/* Header — cream background */}
       <View className="bg-scaffold-bg px-5 pt-4 pb-6">
         <View className="flex-row items-center justify-between">
           <View>
@@ -51,53 +62,45 @@ export default function ParentHome() {
               {displayName} 🙏
             </Text>
           </View>
-          <TouchableOpacity onPress={() => router.push('/notifications')} className="p-2">
-            <Animated.View style={{ transform: [{ translateX: bellAnim }] }}>
-              <Text style={{ fontSize: 22 }}>🔔</Text>
-              {unreadCount > 0 && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: -4,
-                    right: -4,
-                    backgroundColor: '#EF4444',
-                    borderRadius: 8,
-                    minWidth: 16,
-                    height: 16,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    paddingHorizontal: 3,
-                  }}
-                >
-                  <Text style={{ color: '#fff', fontSize: 10, fontFamily: 'WorkSans_600SemiBold' }}>
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </Text>
-                </View>
-              )}
-            </Animated.View>
-          </TouchableOpacity>
+          <View className="flex-row items-center">
+            <TouchableOpacity
+              onPress={handleRefresh}
+              className="p-2 mr-1"
+              disabled={refreshingRole}
+              accessibilityLabel="Refresh"
+            >
+              <Text style={{ fontSize: 20, opacity: refreshingRole ? 0.4 : 1 }}>🔄</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/notifications')} className="p-2">
+              <Animated.View style={{ transform: [{ translateX: bellAnim }] }}>
+                <Text style={{ fontSize: 22 }}>🔔</Text>
+                {unreadCount > 0 && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -4,
+                      right: -4,
+                      backgroundColor: '#EF4444',
+                      borderRadius: 8,
+                      minWidth: 16,
+                      height: 16,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      paddingHorizontal: 3,
+                    }}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 10, fontFamily: 'WorkSans_600SemiBold' }}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Text>
+                  </View>
+                )}
+              </Animated.View>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
       <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
-        {/* Register CTA */}
-        <TouchableOpacity
-          onPress={() => router.push('/(parent)/register-student')}
-          className="rounded-2xl p-4 mb-5 flex-row items-center"
-          style={{ backgroundColor: COLORS.primary }}
-          activeOpacity={0.85}
-        >
-          <Text style={{ fontSize: 32 }}>✏️</Text>
-          <View className="ml-4 flex-1">
-            <Text className="text-white font-sans-semibold text-base">Register a Child</Text>
-            <Text className="text-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>
-              Enrol your child in the Dhamma school
-            </Text>
-          </View>
-          <Text className="text-white text-xl">›</Text>
-        </TouchableOpacity>
-
-        {/* Children section */}
         <Text className="text-xs tracking-widest uppercase mb-3" style={{ color: COLORS.textMuted }}>
           My Children
         </Text>
@@ -107,8 +110,8 @@ export default function ParentHome() {
         ) : !students?.length ? (
           <EmptyState
             icon="👶"
-            title="No children registered"
-            subtitle="Tap 'Register a Child' above to get started"
+            title="No children linked yet"
+            subtitle="If your child is enrolled, ask the school to add your email to their record, then tap the refresh icon above."
           />
         ) : (
           students.map((s) => (

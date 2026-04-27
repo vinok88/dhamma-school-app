@@ -4,7 +4,7 @@ export default function AuthLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="login" />
-      <Stack.Screen name="role-select" />
+      <Stack.Screen name="complete-profile" />
     </Stack>
   );
 }

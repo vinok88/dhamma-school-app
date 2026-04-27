@@ -23,20 +23,32 @@ function isAdminOrPrincipal(role?: string) {
   return role === 'admin' || role === 'principal';
 }
 
-function getDestination(n: NotificationModel, role?: string): string {
+type Destination = { pathname: string; params?: Record<string, string> };
+
+function getDestination(n: NotificationModel, role?: string): Destination {
   switch (n.type) {
     case 'announcement':
-      return role === 'teacher' ? '/(teacher)' : '/(parent)/announcements';
+      return {
+        pathname: role === 'teacher' ? '/(teacher)' : '/(parent)/feed',
+        params: n.referenceId ? { announcementId: n.referenceId } : undefined,
+      };
     case 'message':
-      return n.referenceId ? `/messages/${n.referenceId}` : '/(parent)';
+      return n.referenceId
+        ? { pathname: `/messages/${n.referenceId}` }
+        : { pathname: '/(parent)' };
     case 'event':
-      return role === 'parent' ? '/(parent)/calendar' : '/(teacher)';
+      return {
+        pathname: role === 'parent' ? '/(parent)/feed' : '/(teacher)',
+        params: n.referenceId ? { eventId: n.referenceId } : undefined,
+      };
     case 'registration':
-      return isAdminOrPrincipal(role) ? '/(admin)/registrations' : '/(parent)';
+      return { pathname: isAdminOrPrincipal(role) ? '/(admin)/students' : '/(parent)' };
     case 'attendance':
-      return role === 'teacher' ? '/(teacher)/attendance' : '/(parent)';
+      return { pathname: role === 'teacher' ? '/(teacher)/attendance' : '/(parent)' };
     default:
-      return role === 'teacher' ? '/(teacher)' : isAdminOrPrincipal(role) ? '/(admin)' : '/(parent)';
+      return {
+        pathname: role === 'teacher' ? '/(teacher)' : isAdminOrPrincipal(role) ? '/(admin)' : '/(parent)',
+      };
   }
 }
 
@@ -53,6 +65,9 @@ export default function NotificationsScreen() {
     }
     router.push(getDestination(n, profile?.role) as any);
   }
+
+  // Exported for the OS push-tap handler in app/_layout.tsx
+  // (see destinationFromPushData)
 
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">

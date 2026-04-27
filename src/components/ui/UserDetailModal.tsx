@@ -121,18 +121,29 @@ export function UserDetailModal({ visible, onClose, user, student, studentPhotoU
                     value={student.photoPublishConsent ? 'Approved' : 'Not approved'}
                   />
 
-                  {/* Parent info */}
+                  <DetailRow label="Address" value={student.address} />
+
+                  {/* Parents */}
                   <View className="mt-3 mb-1">
-                    <Text className="text-xs font-sans-semibold" style={{ color: COLORS.navy }}>Parent Info</Text>
+                    <Text className="text-xs font-sans-semibold" style={{ color: COLORS.navy }}>
+                      Parents ({student.parents.length})
+                    </Text>
                   </View>
-                  <DetailRow label="Name" value={student.parentName} />
-                  <DetailRow
-                    label="Phone"
-                    value={student.parentPhone}
-                    onPress={student.parentPhone ? () => dialPhone(student.parentPhone!) : undefined}
-                  />
-                  <DetailRow label="Email" value={student.parentEmail} />
-                  <DetailRow label="Address" value={student.parentAddress} />
+                  {student.parents.length === 0 ? (
+                    <DetailRow label="—" value="No parent linked" />
+                  ) : (
+                    student.parents.map((p, i) => (
+                      <View key={p.id} className={i > 0 ? 'mt-2 pt-2 border-t border-gray-100' : ''}>
+                        <DetailRow label="Name" value={p.parentName} />
+                        <DetailRow
+                          label="Phone"
+                          value={p.parentPhone}
+                          onPress={p.parentPhone ? () => dialPhone(p.parentPhone!) : undefined}
+                        />
+                        <DetailRow label="Email" value={p.parentEmail} />
+                      </View>
+                    ))
+                  )}
                 </>
               )}
             </ScrollView>

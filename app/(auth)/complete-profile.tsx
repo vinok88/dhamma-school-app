@@ -5,7 +5,6 @@ import {
   TextInput,
   Image,
   ScrollView,
-  TouchableOpacity,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -16,27 +15,20 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { TABLES, COLORS } from '@/constants';
-import { roleSelectSchema } from '@/utils/schemas';
+import { completeProfileSchema } from '@/utils/schemas';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
-import { UserRole } from '@/types';
 
 type FormData = {
-  role: UserRole;
   fullName: string;
   preferredName?: string;
   phone: string;
   address: string;
 };
 
-const ROLES: { value: UserRole; label: string; icon: string; desc: string }[] = [
-  { value: 'parent', label: 'Parent / Guardian', icon: '👨‍👩‍👧', desc: 'Register and track your child' },
-  { value: 'teacher', label: 'Teacher', icon: '👩‍🏫', desc: 'Manage your class and attendance' },
-];
-
-export default function RoleSelectScreen() {
-  const { user, refreshProfile } = useAuth();
+export default function CompleteProfileScreen() {
+  const { user, refreshProfile, resolveRoleForSignup } = useAuth();
   const [saving, setSaving] = useState(false);
 
   const {
@@ -45,21 +37,20 @@ export default function RoleSelectScreen() {
     watch,
     formState: { errors },
   } = useForm<FormData>({
-    resolver: zodResolver(roleSelectSchema),
-    defaultValues: { role: 'parent', fullName: '', phone: '', address: '' },
+    resolver: zodResolver(completeProfileSchema),
+    defaultValues: { fullName: '', phone: '', address: '' },
   });
 
-  const selectedRole = watch('role');
   const fullName = watch('fullName');
   const phone = watch('phone');
   const address = watch('address');
   const isFormValid = !!fullName?.trim() && fullName.length >= 2 && !!phone?.trim() && !!address?.trim();
 
   async function onSubmit(data: FormData) {
-    if (!user) return;
+    if (!user?.email) return;
     setSaving(true);
     try {
-      // Get default school_id
+      const role = await resolveRoleForSignup(user.email);
       const { data: school } = await supabase.from(TABLES.SCHOOLS).select('id').limit(1).single();
       const { error } = await supabase.from(TABLES.USER_PROFILES).upsert({
         id: user.id,
@@ -68,8 +59,8 @@ export default function RoleSelectScreen() {
         preferred_name: data.preferredName,
         phone: `+61${data.phone}`,
         address: data.address,
-        role: data.role,
-        status: 'pending',
+        role,
+        status: 'active',
         updated_at: new Date().toISOString(),
       });
       if (error) throw error;
@@ -88,62 +79,24 @@ export default function RoleSelectScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-          {/* Temple illustration */}
-          <View style={{ width: '100%', height: 260, backgroundColor: '#FAF6F0', alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: '100%', height: 220, backgroundColor: '#FAF6F0', alignItems: 'center', justifyContent: 'center' }}>
             <Image
               source={require('../../assets/images/pagoda.png')}
-              style={{ width: '100%', height: 260 }}
+              style={{ width: '100%', height: 220 }}
               resizeMode="contain"
             />
           </View>
+
           <View className="px-5 pt-4 pb-6">
-            <Text className="text-center text-xs tracking-widest uppercase mb-6" style={{ color: '#8B7D6B' }}>
-              Please choose your role
+            <Text className="text-center text-xs tracking-widest uppercase mb-2" style={{ color: '#8B7D6B' }}>
+              Welcome
             </Text>
-
-            {/* Role selector */}
-            <View className="mb-6 gap-3">
-              {ROLES.map((r) => {
-                const active = selectedRole === r.value;
-                return (
-                  <Controller
-                    key={r.value}
-                    control={control}
-                    name="role"
-                    render={({ field }) => (
-                      <TouchableOpacity
-                        onPress={() => field.onChange(r.value)}
-                        className="rounded-xl p-4 flex-row items-center bg-white"
-                        style={{
-                          borderWidth: 1,
-                          borderColor: active ? COLORS.primary : '#EDE8E0',
-                          borderLeftWidth: 4,
-                          borderLeftColor: active ? COLORS.primary : '#EDE8E0',
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <View
-                          className="w-10 h-10 rounded-full items-center justify-center mr-3"
-                          style={{ backgroundColor: active ? '#FDF3E7' : '#F5EFE6' }}
-                        >
-                          <Text style={{ fontSize: 22 }}>{r.icon}</Text>
-                        </View>
-                        <View className="flex-1">
-                          <Text className="font-sans-semibold text-base" style={{ color: active ? COLORS.primary : '#1C1C1E' }}>
-                            {r.label}
-                          </Text>
-                          <Text className="text-xs" style={{ color: '#8B7D6B' }}>{r.desc}</Text>
-                        </View>
-                        <Text style={{ color: '#8B7D6B', fontSize: 18 }}>›</Text>
-                      </TouchableOpacity>
-                    )}
-                  />
-                );
-              })}
-            </View>
-
-            {/* Profile fields */}
-            <Text className="text-sm font-sans-semibold mb-3" style={{ color: '#1C1C1E' }}>Your details</Text>
+            <Text
+              className="text-center mb-6"
+              style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}
+            >
+              Tell us about yourself
+            </Text>
 
             <Controller
               control={control}
@@ -213,16 +166,12 @@ export default function RoleSelectScreen() {
               )}
             />
 
-            {selectedRole === 'teacher' && (
-              <View className="bg-gold/10 rounded-xl p-3 mb-4">
-                <Text className="text-sm text-brown">
-                  🔔 Teacher accounts require admin approval before access is granted.
-                </Text>
-              </View>
-            )}
+            <Text className="text-xs text-text-muted mb-4">
+              Your role is determined automatically by your email.
+            </Text>
 
             <Button
-              label="Create Profile"
+              label="Continue"
               onPress={handleSubmit(onSubmit)}
               loading={saving}
               disabled={!isFormValid}

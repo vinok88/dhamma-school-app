@@ -267,21 +267,38 @@ serve(async (req: Request) => {
     ) {
       const { data: profiles, error } = await supabase
         .from('user_profiles')
-        .select('id, fcm_token')
+        .select('id, fcm_token, role')
         .eq('school_id', announcement.school_id)
-        .not('fcm_token', 'is', null)
+        .neq('role', 'guest')
 
       if (error) throw error
-      fcmTokens = profiles?.map((p) => p.fcm_token).filter(Boolean) ?? []
-      targetUserIds = profiles?.map((p) => p.id) ?? []
+      const eligible = (profiles ?? []).filter((p: any) => p.id !== announcement.author_id)
+      fcmTokens = eligible.map((p: any) => p.fcm_token).filter(Boolean)
+      targetUserIds = eligible.map((p: any) => p.id)
     } else if (announcement.type === 'class' && announcement.target_class_id) {
-      const { data: students, error: studentsError } = await supabase
+      // Get student IDs in the target class, then resolve parent users via student_parents.
+      const { data: classStudents, error: studentsError } = await supabase
         .from('students')
-        .select('parent_id')
+        .select('id')
         .eq('class_id', announcement.target_class_id)
         .eq('status', 'active')
 
       if (studentsError) throw studentsError
+
+      const studentIds: string[] = (classStudents ?? []).map((s: any) => s.id as string)
+
+      let parentIds: string[] = []
+      if (studentIds.length > 0) {
+        const { data: links, error: linksError } = await supabase
+          .from('student_parents')
+          .select('parent_user_id')
+          .in('student_id', studentIds)
+          .not('parent_user_id', 'is', null)
+
+        if (linksError) throw linksError
+        const ids = (links ?? []).map((l: any) => l.parent_user_id as string)
+        parentIds = Array.from(new Set(ids))
+      }
 
       const { data: classData, error: classError } = await supabase
         .from('classes')
@@ -291,7 +308,6 @@ serve(async (req: Request) => {
 
       if (classError) throw classError
 
-      const parentIds = [...new Set(students?.map((s) => s.parent_id) ?? [])]
       const teacherId = classData?.teacher_id
       const allUserIds = [...parentIds, ...(teacherId ? [teacherId] : [])]
       targetUserIds = allUserIds

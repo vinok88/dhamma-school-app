@@ -1,6 +1,6 @@
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
-export type UserRole = 'parent' | 'teacher' | 'admin' | 'principal';
+export type UserRole = 'parent' | 'teacher' | 'admin' | 'principal' | 'guest';
 export type UserStatus = 'active' | 'inactive' | 'pending';
 export type StudentStatus =
   | 'pending'
@@ -44,17 +44,34 @@ export interface StudentModel {
   allergyNotes?: string;
   photoUrl?: string;
   photoPublishConsent: boolean;
-  parentId: string;
+  address?: string;
   classId?: string;
   className?: string;
   status: StudentStatus;
   statusNote?: string;
-  parentName?: string;
-  parentPhone?: string;
-  parentEmail?: string;
-  parentAddress?: string;
+  parents: StudentParentLink[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface StudentParentLink {
+  id: string;
+  studentId: string;
+  parentEmail: string;
+  parentName?: string;
+  parentPhone?: string;
+  parentUserId?: string;
+}
+
+export interface TeacherInvitation {
+  id: string;
+  email: string;
+  fullName?: string;
+  phone?: string;
+  address?: string;
+  invitedBy?: string;
+  claimedBy?: string;
+  createdAt: string;
 }
 
 export interface ClassModel {

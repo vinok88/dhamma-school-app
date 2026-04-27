@@ -56,9 +56,18 @@ export default function StudentDetailScreen() {
 
         {/* Parent info */}
         <Card className="mb-4">
-          <Text className="font-sans-semibold text-text-primary mb-2">Parent / Guardian</Text>
-          <Row label="Name" value={student.parentName ?? '—'} />
-          <Row label="Phone" value={student.parentPhone ?? '—'} />
+          <Text className="font-sans-semibold text-text-primary mb-2">Parents / Guardians</Text>
+          {student.parents.length === 0 ? (
+            <Row label="—" value="No parent linked" />
+          ) : (
+            student.parents.map((p, i) => (
+              <View key={p.id} className={i > 0 ? 'mt-3 pt-3 border-t border-gray-100' : ''}>
+                <Row label="Name" value={p.parentName ?? '—'} />
+                <Row label="Email" value={p.parentEmail} />
+                <Row label="Phone" value={p.parentPhone ?? '—'} />
+              </View>
+            ))
+          )}
         </Card>
 
         {/* Attendance */}

@@ -13,6 +13,8 @@ export const TABLES = {
   EVENTS: 'events',
   MESSAGES: 'messages',
   NOTIFICATIONS: 'notifications',
+  STUDENT_PARENTS: 'student_parents',
+  TEACHER_INVITATIONS: 'teacher_invitations',
 } as const;
 
 // Supabase storage buckets

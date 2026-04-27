@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext, createContext, useCallback } fr
 import { Session, User } from '@supabase/supabase-js';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { supabase } from '@/lib/supabase';
-import { UserModel } from '@/types';
+import { UserModel, UserRole } from '@/types';
 import { TABLES } from '@/constants';
 
 interface AuthContextType {
@@ -13,6 +13,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  resolveRoleForSignup: (email: string) => Promise<UserRole>;
+  refreshMyRole: () => Promise<UserRole | null>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -95,8 +97,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user) await fetchProfile(user.id);
   }
 
+  async function resolveRoleForSignup(email: string): Promise<UserRole> {
+    const { data, error } = await supabase.rpc('resolve_user_role_for_signup', {
+      p_email: email,
+    });
+    if (error) throw error;
+    return data as UserRole;
+  }
+
+  async function refreshMyRole(): Promise<UserRole | null> {
+    const { data, error } = await supabase.rpc('refresh_my_role');
+    if (error) throw error;
+    await refreshProfile();
+    return (data ?? null) as UserRole | null;
+  }
+
   return React.createElement(AuthContext.Provider, {
-    value: { session, user, profile, loading, signOut, signInWithGoogle, refreshProfile },
+    value: {
+      session,
+      user,
+      profile,
+      loading,
+      signOut,
+      signInWithGoogle,
+      refreshProfile,
+      resolveRoleForSignup,
+      refreshMyRole,
+    },
   }, children);
 }
 

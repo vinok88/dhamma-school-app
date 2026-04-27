@@ -24,7 +24,6 @@ export default function AdminLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Dashboard', tabBarIcon: ({ focused }) => <TabIcon emoji="📊" focused={focused} /> }} />
-      <Tabs.Screen name="registrations" options={{ title: 'Pending', tabBarIcon: ({ focused }) => <TabIcon emoji="⏳" focused={focused} /> }} />
       <Tabs.Screen name="students" options={{ title: 'Students', tabBarIcon: ({ focused }) => <TabIcon emoji="🎒" focused={focused} /> }} />
       <Tabs.Screen name="classes" options={{ title: 'Classes', tabBarIcon: ({ focused }) => <TabIcon emoji="🏫" focused={focused} /> }} />
       <Tabs.Screen name="more" options={{ title: 'More', tabBarIcon: ({ focused }) => <TabIcon emoji="⋯" focused={focused} /> }} />
@@ -36,6 +35,8 @@ export default function AdminLayout() {
       <Tabs.Screen name="announce" options={{ href: null }} />
       <Tabs.Screen name="announcement-stats" options={{ href: null }} />
       <Tabs.Screen name="manage-users" options={{ href: null }} />
+      <Tabs.Screen name="add-student" options={{ href: null }} />
+      <Tabs.Screen name="add-teacher" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -95,9 +95,9 @@ export default function AdminDashboard() {
         <Text className="text-xs tracking-widest uppercase mb-3" style={{ color: '#8B7D6B' }}>Management</Text>
         <View className="flex-row flex-wrap gap-3 mb-4">
           {[
-            { label: 'Teachers', icon: '👩‍🏫', route: '/(admin)/teachers' },
+            { label: 'Add Student', icon: '➕', route: '/(admin)/add-student' },
+            { label: 'Add Teacher', icon: '📨', route: '/(admin)/add-teacher' },
             { label: 'Events', icon: '📅', route: '/(admin)/events' },
-            { label: 'Reports', icon: '📋', route: '/(admin)/reports' },
             { label: 'Announce', icon: '📢', route: '/(admin)/announce' },
           ].map((item) => (
             <TouchableOpacity

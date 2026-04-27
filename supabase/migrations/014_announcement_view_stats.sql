@@ -1,15 +1,15 @@
--- Announcement view stats RPC function
--- Derives "viewed" status from the notifications table:
---   notification row exists for user + announcement → NOT viewed
---   notification row deleted (user tapped it) → viewed
+-- Migration 014: get_announcement_view_stats RPC.
+-- "viewed" is derived from the notifications table: a notification row exists
+-- when delivered; deleting it (user tapped through) marks it viewed.
 
 CREATE OR REPLACE FUNCTION get_announcement_view_stats(p_announcement_id UUID)
 RETURNS TABLE (
-  user_id UUID,
+  user_id   UUID,
   full_name TEXT,
-  role user_role,
-  viewed BOOLEAN
-) AS $$
+  role      user_role,
+  viewed    BOOLEAN
+)
+LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_announcement RECORD;
 BEGIN
@@ -17,7 +17,6 @@ BEGIN
   IF NOT FOUND THEN RETURN; END IF;
 
   IF v_announcement.type IN ('school', 'emergency', 'event_reminder') THEN
-    -- All active users in the school (excluding the author)
     RETURN QUERY
     SELECT up.id, up.full_name, up.role,
            NOT EXISTS (
@@ -29,10 +28,10 @@ BEGIN
     FROM user_profiles up
     WHERE up.school_id = v_announcement.school_id
       AND up.status = 'active'
+      AND up.role <> 'guest'
       AND up.id != v_announcement.author_id;
 
   ELSIF v_announcement.type = 'class' AND v_announcement.target_class_id IS NOT NULL THEN
-    -- Parents of students in class + class teacher (excluding author)
     RETURN QUERY
     SELECT up.id, up.full_name, up.role,
            NOT EXISTS (
@@ -46,9 +45,15 @@ BEGIN
       AND up.status = 'active'
       AND up.id != v_announcement.author_id
       AND (
-        up.id IN (SELECT s.parent_id FROM students s WHERE s.class_id = v_announcement.target_class_id)
+        up.id IN (
+          SELECT sp.parent_user_id
+            FROM student_parents sp
+            JOIN students s ON s.id = sp.student_id
+           WHERE s.class_id = v_announcement.target_class_id
+             AND sp.parent_user_id IS NOT NULL
+        )
         OR up.id IN (SELECT c.teacher_id FROM classes c WHERE c.id = v_announcement.target_class_id)
       );
   END IF;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;

@@ -1,7 +1,7 @@
 import React from 'react';
-import { fireEvent, screen } from '@testing-library/react-native';
+import { screen } from '@testing-library/react-native';
 import { renderScreen } from '@/test-utils/render';
-import { parentProfile, makeStudent, queryOk } from '@/test-utils/fixtures';
+import { makeStudent, queryOk } from '@/test-utils/fixtures';
 
 const mockPush = jest.fn();
 
@@ -11,7 +11,10 @@ jest.mock('expo-router', () => ({
 }));
 
 jest.mock('@/hooks/useAuth', () => ({
-  useAuth: () => ({ profile: require('@/test-utils/fixtures').parentProfile }),
+  useAuth: () => ({
+    profile: require('@/test-utils/fixtures').parentProfile,
+    refreshMyRole: jest.fn().mockResolvedValue('parent'),
+  }),
 }));
 
 jest.mock('@/hooks/useStudents', () => ({
@@ -32,18 +35,18 @@ import { useMyStudents } from '@/hooks/useStudents';
 describe('ParentHome', () => {
   beforeEach(() => mockPush.mockClear());
 
-  it('shows empty state when no children registered', () => {
-    (useMyStudents as jest.Mock).mockReturnValue(queryOk([]));
+  it('shows empty state when no children linked', () => {
+    (useMyStudents as jest.Mock).mockReturnValue({ ...queryOk([]), refetch: jest.fn() });
     renderScreen(<ParentHome />);
-    expect(screen.getByText(/No children registered/)).toBeTruthy();
-    expect(screen.getByText('Register a Child')).toBeTruthy();
+    expect(screen.getByText(/No children linked yet/)).toBeTruthy();
   });
 
-  it('lists children and routes to register on CTA tap', () => {
-    (useMyStudents as jest.Mock).mockReturnValue(queryOk([makeStudent({ firstName: 'Anna' })]));
+  it('lists children', () => {
+    (useMyStudents as jest.Mock).mockReturnValue({
+      ...queryOk([makeStudent({ firstName: 'Anna' })]),
+      refetch: jest.fn(),
+    });
     renderScreen(<ParentHome />);
     expect(screen.getByText(/Anna/)).toBeTruthy();
-    fireEvent.press(screen.getByText('Register a Child'));
-    expect(mockPush).toHaveBeenCalledWith('/(parent)/register-student');
   });
 });

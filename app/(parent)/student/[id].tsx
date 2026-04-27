@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, ScrollView, Image } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useStudentDetail } from '@/hooks/useStudents';
 import { useStudentPhotoUrl } from '@/hooks/useProfile';
 import { useStudentAttendanceHistory } from '@/hooks/useAttendance';
@@ -13,6 +13,7 @@ import { formatDate, formatAge, formatDateShort } from '@/utils/date';
 import { ATTENDANCE_STATUS_CONFIG, COLORS } from '@/constants';
 
 export default function StudentStatusScreen() {
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: student, isLoading } = useStudentDetail(id);
   const { data: history } = useStudentAttendanceHistory(id);
@@ -29,6 +30,16 @@ export default function StudentStatusScreen() {
     <SafeAreaView className="flex-1 bg-scaffold-bg">
       <ScreenHeader title="Student Status" showBack />
       <ScrollView className="flex-1 px-4 pt-4" showsVerticalScrollIndicator={false}>
+
+        {/* Edit CTA */}
+        <TouchableOpacity
+          onPress={() => router.push({ pathname: '/(parent)/student-edit', params: { id: student.id } })}
+          className="self-end mb-2 px-3 py-1.5 rounded-full"
+          style={{ backgroundColor: COLORS.primary }}
+          activeOpacity={0.8}
+        >
+          <Text className="text-white text-xs font-sans-semibold">✏️  Edit profile</Text>
+        </TouchableOpacity>
 
         {/* Profile card */}
         <Card className="mb-4">

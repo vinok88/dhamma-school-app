@@ -1,8 +1,7 @@
 import { z } from 'zod';
 
 
-export const roleSelectSchema = z.object({
-  role: z.enum(['parent', 'teacher', 'admin', 'principal']),
+export const completeProfileSchema = z.object({
   fullName: z.string()
     .min(2, 'Full name is required')
     .refine(
@@ -14,6 +13,35 @@ export const roleSelectSchema = z.object({
     .min(1, 'Phone number is required')
     .regex(/^\d{9,10}$/, 'Phone number must be 9 or 10 digits (without +61)'),
   address: z.string().min(5, 'Address is required'),
+});
+
+export const addStudentSchema = z.object({
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  preferredName: z.string().optional(),
+  dob: z.string().min(1, 'Date of birth is required'),
+  gender: z.enum(['male', 'female', 'other'], { required_error: 'Gender is required' }),
+  address: z.string().min(5, 'Address is required'),
+  classId: z.string().min(1, 'Class is required'),
+  hasAllergies: z.boolean(),
+  allergyNotes: z.string().optional(),
+  photoPublishConsent: z.boolean(),
+  parents: z.array(
+    z.object({
+      email: z.string().email('Invalid email'),
+      name: z.string().min(2, 'Parent/Guardian name is required'),
+      phone: z.string()
+        .min(1, 'Phone number is required')
+        .regex(/^\d{9,10}$/, 'Phone number must be 9 or 10 digits (without +61)'),
+    })
+  ).min(1, 'At least one Parent/Guardian is required'),
+});
+
+export const addTeacherSchema = z.object({
+  fullName: z.string().min(2, 'Full name is required'),
+  email: z.string().email('Invalid email'),
+  phone: z.string().optional(),
+  address: z.string().optional(),
 });
 
 export const registerStudentStep1Schema = z.object({
