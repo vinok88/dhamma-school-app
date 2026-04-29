@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, findNodeHandle } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, findNodeHandle, Modal, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
 import { useLocalSearchParams } from 'expo-router';
@@ -39,7 +39,8 @@ export default function FeedScreen() {
   const schoolId = profile?.schoolId ?? '';
   const params = useLocalSearchParams<{ announcementId?: string; eventId?: string }>();
 
-  const [selectedDate, setSelectedDate] = useState<string>(toIsoDate(new Date()));
+  // null = no date picked → show recent items across all dates.
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterValue>('all');
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
@@ -123,46 +124,57 @@ export default function FeedScreen() {
       ensure(key).dots.push({ color, key: `ann-${a.id}` });
     });
 
-    // Selected day overlay
-    if (m[selectedDate]) {
-      m[selectedDate].selected = true;
-      m[selectedDate].selectedColor = COLORS.primary;
-    } else {
-      m[selectedDate] = { selected: true, selectedColor: COLORS.primary, dots: [] };
+    // Selected day overlay (only when the user has explicitly tapped a date)
+    if (selectedDate) {
+      if (m[selectedDate]) {
+        m[selectedDate].selected = true;
+        m[selectedDate].selectedColor = COLORS.primary;
+      } else {
+        m[selectedDate] = { selected: true, selectedColor: COLORS.primary, dots: [] };
+      }
     }
 
     return m;
   }, [events, announcements, selectedDate]);
 
   // ── Filter + slice the list shown below the calendar ───────────────
-  const filteredItems = useMemo(() => {
-    const dayEvents = (events ?? []).filter((e) =>
-      e.startDatetime.startsWith(selectedDate)
-    );
-    const dayAnnouncements = (announcements ?? []).filter((a) =>
-      a.publishedAt.startsWith(selectedDate)
-    );
+  // Two modes:
+  //   - selectedDate set  → only that day's items
+  //   - selectedDate null → "recent" feed: all items, newest first, capped
+  const RECENT_LIMIT = 30;
 
+  const filteredItems = useMemo(() => {
     let items: { kind: 'event' | 'announcement'; payload: any; date: string }[] = [
-      ...dayEvents.map((e) => ({ kind: 'event' as const, payload: e, date: e.startDatetime })),
-      ...dayAnnouncements.map((a) => ({ kind: 'announcement' as const, payload: a, date: a.publishedAt })),
+      ...(events ?? []).map((e) => ({ kind: 'event' as const, payload: e, date: e.startDatetime })),
+      ...(announcements ?? []).map((a) => ({ kind: 'announcement' as const, payload: a, date: a.publishedAt })),
     ];
+
+    if (selectedDate) {
+      items = items.filter((i) => i.date.startsWith(selectedDate));
+    }
 
     if (filter === 'events') {
       items = items.filter((i) => i.kind === 'event');
     } else if (filter === 'announcements') {
       items = items.filter((i) => i.kind === 'announcement');
     } else if (filter !== 'all') {
-      // Specific announcement category
       items = items.filter(
         (i) => i.kind === 'announcement' && i.payload.type === filter
       );
     }
 
-    return items.sort((a, b) => (a.date < b.date ? -1 : 1));
+    // Day view → chronological. Recent view → newest first, capped.
+    if (selectedDate) {
+      return items.sort((a, b) => (a.date < b.date ? -1 : 1));
+    }
+    return items
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
+      .slice(0, RECENT_LIMIT);
   }, [events, announcements, selectedDate, filter]);
 
   const isLoading = aLoading || eLoading;
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const activeFilter = FILTERS.find((f) => f.value === filter) ?? FILTERS[0];
 
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">
@@ -175,34 +187,68 @@ export default function FeedScreen() {
         </Text>
       </View>
 
-      {/* Filter chips — single horizontal row */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        className="bg-white border-b border-gray-100"
-        contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 10, gap: 8 }}
+      {/* Filter dropdown */}
+      <View className="bg-white border-b border-gray-100 px-4 py-3">
+        <Text className="text-xs mb-1.5" style={{ color: COLORS.textMuted }}>
+          Showing
+        </Text>
+        <TouchableOpacity
+          onPress={() => setPickerOpen(true)}
+          activeOpacity={0.7}
+          className="flex-row items-center justify-between bg-gray-100 rounded-xl px-4 py-3"
+        >
+          <Text className="text-sm font-sans-semibold text-text-primary" numberOfLines={1}>
+            {activeFilter.label}
+          </Text>
+          <Text style={{ color: COLORS.textMuted, fontSize: 12 }}>▼</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Modal
+        visible={pickerOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPickerOpen(false)}
       >
-        {FILTERS.map((f) => {
-          const active = filter === f.value;
-          return (
-            <TouchableOpacity
-              key={f.value}
-              onPress={() => setFilter(f.value)}
-              className={`px-3 py-1.5 rounded-full ${active ? 'bg-primary' : 'bg-gray-100'}`}
-            >
-              <Text
-                className={`text-xs font-sans-semibold ${active ? 'text-white' : 'text-text-muted'}`}
-              >
-                {f.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+        <Pressable
+          onPress={() => setPickerOpen(false)}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 24 }}
+        >
+          <Pressable className="bg-white rounded-2xl overflow-hidden">
+            <View className="px-4 py-3 border-b border-gray-100">
+              <Text className="text-sm font-sans-semibold text-text-primary">Filter notices & events</Text>
+            </View>
+            {FILTERS.map((f) => {
+              const active = filter === f.value;
+              return (
+                <TouchableOpacity
+                  key={f.value}
+                  onPress={() => {
+                    setFilter(f.value);
+                    setPickerOpen(false);
+                  }}
+                  className={`flex-row items-center justify-between px-4 py-3 ${active ? 'bg-red-50' : ''}`}
+                  activeOpacity={0.6}
+                >
+                  <Text
+                    className={`text-sm ${active ? 'font-sans-semibold' : ''}`}
+                    style={{ color: active ? COLORS.primary : '#1C1C1E' }}
+                  >
+                    {f.label}
+                  </Text>
+                  {active ? <Text style={{ color: COLORS.primary }}>✓</Text> : null}
+                </TouchableOpacity>
+              );
+            })}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <ScrollView ref={scrollViewRef} className="flex-1" showsVerticalScrollIndicator={false}>
         <Calendar
-          onDayPress={(day: { dateString: string }) => setSelectedDate(day.dateString)}
+          onDayPress={(day: { dateString: string }) =>
+            setSelectedDate((curr) => (curr === day.dateString ? null : day.dateString))
+          }
           markedDates={markedDates}
           markingType="multi-dot"
           theme={{
@@ -225,13 +271,26 @@ export default function FeedScreen() {
         </View>
 
         <View className="px-4 pt-2">
-          <Text className="font-sans-semibold text-text-primary mb-3">
-            {formatHeader(selectedDate)}
-          </Text>
+          <View className="flex-row items-center justify-between mb-3">
+            <Text className="font-sans-semibold text-text-primary">
+              {selectedDate ? formatHeader(selectedDate) : 'Recent'}
+            </Text>
+            {selectedDate ? (
+              <TouchableOpacity onPress={() => setSelectedDate(null)} activeOpacity={0.7}>
+                <Text className="text-xs font-sans-semibold" style={{ color: COLORS.primary }}>
+                  Show recent
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
           {isLoading ? (
             <LoadingSpinner />
           ) : filteredItems.length === 0 ? (
-            <EmptyState icon="📭" title="Nothing here" subtitle="No notices or events for this day" />
+            <EmptyState
+              icon="📭"
+              title="Nothing here"
+              subtitle={selectedDate ? 'No notices or events for this day' : 'No matching notices or events yet'}
+            />
           ) : (
             filteredItems.map((item) => {
               const key = item.kind === 'event' ? `e-${item.payload.id}` : `a-${item.payload.id}`;

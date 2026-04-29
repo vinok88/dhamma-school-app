@@ -1,17 +1,31 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
-import { useMyClass } from '@/hooks/useClasses';
+import { useMyClasses } from '@/hooks/useClasses';
 import { useClassStudents } from '@/hooks/useStudents';
 import { StudentCard } from '@/components/StudentCard';
+import { ClassPicker } from '@/components/ui/ClassPicker';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { COLORS } from '@/constants';
 
 export default function ClassRosterScreen() {
   const { profile } = useAuth();
-  const { data: myClass } = useMyClass(profile?.id ?? '');
+  const { data: classes } = useMyClasses(profile?.id ?? '');
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!classes?.length) return;
+    if (!selectedClassId || !classes.some((c) => c.id === selectedClassId)) {
+      setSelectedClassId(classes[0].id);
+    }
+  }, [classes, selectedClassId]);
+
+  const myClass = useMemo(
+    () => (classes ?? []).find((c) => c.id === selectedClassId) ?? null,
+    [classes, selectedClassId]
+  );
   const { data: students, isLoading } = useClassStudents(myClass?.id ?? '');
   const [search, setSearch] = useState('');
 
@@ -33,6 +47,12 @@ export default function ClassRosterScreen() {
         </Text>
         <Text className="text-sm" style={{ color: '#8B7D6B' }}>{myClass?.gradeLevel} · {students?.length ?? 0} students</Text>
       </View>
+
+      <ClassPicker
+        classes={classes ?? []}
+        selectedId={selectedClassId ?? undefined}
+        onSelect={setSelectedClassId}
+      />
 
       {/* Search */}
       <View className="px-4 py-3 bg-white border-b border-gray-100">

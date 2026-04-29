@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useContext, createContext, useCallback } from 'react';
+import React, { useState, useEffect, useContext, createContext, useCallback, useRef } from 'react';
+import { AppState } from 'react-native';
 import { Session, User } from '@supabase/supabase-js';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { supabase } from '@/lib/supabase';
 import { UserModel, UserRole } from '@/types';
-import { TABLES } from '@/constants';
+import { TABLES, STORAGE } from '@/constants';
 
 interface AuthContextType {
   session: Session | null;
@@ -34,6 +35,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (data) {
       const { data: { user: authUser } } = await supabase.auth.getUser();
+
+      // Resolve stored profile_photo_url path → signed URL (1 hr) so the
+      // app can render <Image> directly without any per-screen plumbing.
+      let signedPhotoUrl: string | undefined;
+      const path = data.profile_photo_url as string | null | undefined;
+      if (path && !path.startsWith('http')) {
+        try {
+          const { data: urlData } = await supabase.storage
+            .from(STORAGE.PROFILE_PHOTOS)
+            .createSignedUrl(path, 3600);
+          signedPhotoUrl = urlData?.signedUrl ?? undefined;
+        } catch {
+          // Non-fatal — fall back to initials avatar
+        }
+      } else if (path) {
+        signedPhotoUrl = path;
+      }
+
       setProfile({
         id: data.id,
         schoolId: data.school_id,
@@ -43,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         address: data.address,
         role: data.role,
         status: data.status,
-        profilePhotoUrl: data.profile_photo_url,
+        profilePhotoUrl: signedPhotoUrl,
         fcmToken: data.fcm_token,
         email: authUser?.email,
         createdAt: data.created_at,
@@ -73,6 +92,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => listener.subscription.unsubscribe();
   }, [fetchProfile]);
+
+  // Re-fetch profile when the app returns to the foreground so that role /
+  // status / photo changes performed by an admin while the user was away
+  // show up without a manual refresh.
+  const lastAppStateRef = useRef('active');
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (lastAppStateRef.current.match(/inactive|background/) && next === 'active') {
+        if (user) fetchProfile(user.id);
+      }
+      lastAppStateRef.current = next;
+    });
+    return () => sub.remove();
+  }, [user?.id, fetchProfile]);
 
   async function signOut() {
     await supabase.auth.signOut();

@@ -9,7 +9,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { formatDate, formatAge, formatDateShort } from '@/utils/date';
+import { formatDate, formatAge, formatDateShort, formatTime } from '@/utils/date';
 import { ATTENDANCE_STATUS_CONFIG, COLORS } from '@/constants';
 
 export default function StudentStatusScreen() {
@@ -77,10 +77,27 @@ export default function StudentStatusScreen() {
             <Row label="Date of Birth" value={formatDate(student.dob)} />
             <Row label="Gender" value={student.gender} />
             <Row label="Class" value={student.className ?? 'Not assigned'} />
+            {student.classTeacherName && (
+              <Row label="Teacher" value={student.classTeacherName} />
+            )}
             {student.hasAllergies && (
               <Row label="Allergies" value={student.allergyNotes ?? 'Yes (no notes)'} highlight />
             )}
           </View>
+
+          {student.classTeacherId ? (
+            <TouchableOpacity
+              onPress={() => router.push({
+                pathname: `/messages/${student.classTeacherId}`,
+                params: { name: student.classTeacherName ?? 'Teacher' },
+              } as never)}
+              className="self-start mt-3 rounded-full px-3 py-1.5"
+              style={{ backgroundColor: COLORS.primary }}
+              activeOpacity={0.85}
+            >
+              <Text className="text-white text-xs font-sans-semibold">💬 Message Teacher</Text>
+            </TouchableOpacity>
+          ) : null}
         </Card>
 
         {/* Status note */}
@@ -105,15 +122,23 @@ export default function StudentStatusScreen() {
             </View>
             <View className="flex-1 items-center py-3 rounded-xl" style={{ backgroundColor: COLORS.cream }}>
               <Text className="text-2xl font-sans-semibold text-brown">{percentage}%</Text>
-              <Text className="text-xs text-text-muted">Rate</Text>
+              <Text className="text-xs text-text-muted">Attendance %</Text>
             </View>
           </View>
 
           {history?.map((a) => {
             const cfg = ATTENDANCE_STATUS_CONFIG[a.status] ?? ATTENDANCE_STATUS_CONFIG.absent;
             return (
-              <View key={a.id} className="flex-row items-center justify-between py-2 border-b border-gray-50">
-                <Text className="text-sm text-text-primary">{formatDateShort(a.sessionDate)}</Text>
+              <View key={a.id} className="flex-row items-start justify-between py-2 border-b border-gray-50">
+                <View className="flex-1 mr-2">
+                  <Text className="text-sm text-text-primary">{formatDateShort(a.sessionDate)}</Text>
+                  {a.checkinTime ? (
+                    <Text className="text-xs text-text-muted mt-0.5">
+                      In · {formatTime(a.checkinTime)}
+                      {a.checkoutTime ? `   ·   Out · ${formatTime(a.checkoutTime)}` : ''}
+                    </Text>
+                  ) : null}
+                </View>
                 <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: cfg.bg }}>
                   <Text style={{ color: cfg.color, fontSize: 11 }}>{cfg.label}</Text>
                 </View>

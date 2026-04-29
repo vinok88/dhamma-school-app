@@ -8,7 +8,8 @@ jest.mock('@/hooks/useAuth', () => ({
 }));
 
 jest.mock('@/hooks/useClasses', () => ({
-  useMyClass: () => require('@/test-utils/fixtures').queryOk({ id: 'c1', name: 'Year 2' }),
+  useMyClasses: () =>
+    require('@/test-utils/fixtures').queryOk([{ id: 'c1', name: 'Year 2', gradeLevel: 'Y2', studentCount: 0 }]),
 }));
 
 jest.mock('@/hooks/useStudents', () => ({
@@ -20,6 +21,8 @@ jest.mock('@/hooks/useAttendance', () => ({
   useCheckIn: () => require('@/test-utils/fixtures').mutationStub(),
   useCheckOut: () => require('@/test-utils/fixtures').mutationStub(),
   useMarkAbsent: () => require('@/test-utils/fixtures').mutationStub(),
+  useUndoCheckIn: () => require('@/test-utils/fixtures').mutationStub(),
+  useUndoCheckOut: () => require('@/test-utils/fixtures').mutationStub(),
 }));
 
 jest.mock('@/hooks/useProfile', () => ({

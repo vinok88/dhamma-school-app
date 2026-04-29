@@ -57,6 +57,39 @@ export function useMyClass(teacherId: string) {
       return mapClass(data);
     },
     enabled: !!teacherId,
+    // Pick up admin/principal class assignment changes without app restart.
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+// Multi-class support: a teacher may be assigned to more than one class.
+export function useMyClasses(teacherId: string) {
+  return useQuery({
+    queryKey: ['classes', 'teacher', teacherId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from(TABLES.CLASSES)
+        .select('*, user_profiles(full_name)')
+        .eq('teacher_id', teacherId)
+        .order('name');
+      if (error) throw error;
+      const classes = (data ?? []).map(mapClass);
+      // Attach student counts in parallel
+      const counts = await Promise.all(
+        classes.map((c) =>
+          supabase
+            .from(TABLES.STUDENTS)
+            .select('id', { count: 'exact', head: true })
+            .eq('class_id', c.id)
+            .eq('status', 'active')
+        )
+      );
+      return classes.map((c, i) => ({ ...c, studentCount: counts[i].count ?? 0 }));
+    },
+    enabled: !!teacherId,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 

@@ -115,6 +115,47 @@ export function useCheckOut() {
   });
 }
 
+// Remove the attendance record entirely — used to undo a mistakenly entered
+// check-in for the day so the teacher can re-record from a clean state.
+export function useUndoCheckIn() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ attendanceId, classId: _classId }: { attendanceId: string; classId: string }) => {
+      // Use .select() so Supabase returns the deleted rows and we can detect
+      // when RLS silently blocked the delete (0 rows affected, no error).
+      const { data, error } = await supabase
+        .from(TABLES.ATTENDANCE_RECORDS)
+        .delete()
+        .eq('id', attendanceId)
+        .select();
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error(
+          'Could not undo check-in. Your account may not have permission — ask the principal to apply the latest DB migration.'
+        );
+      }
+    },
+    onSuccess: (_, vars) =>
+      qc.invalidateQueries({ queryKey: ['attendance', 'today', vars.classId] }),
+  });
+}
+
+// Revert a check-out: clear checkout_time and roll status back to checked_in.
+export function useUndoCheckOut() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ attendanceId, classId: _classId }: { attendanceId: string; classId: string }) => {
+      const { error } = await supabase
+        .from(TABLES.ATTENDANCE_RECORDS)
+        .update({ checkout_time: null, status: 'checked_in' })
+        .eq('id', attendanceId);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) =>
+      qc.invalidateQueries({ queryKey: ['attendance', 'today', vars.classId] }),
+  });
+}
+
 export function useMarkAbsent() {
   const qc = useQueryClient();
   return useMutation({

@@ -31,6 +31,7 @@ export default function TeacherLayout() {
       <Tabs.Screen name="attendance" options={{ title: 'Attendance', href: isPending ? null : '/(teacher)/attendance', tabBarIcon: ({ focused }) => <TabIcon emoji="✅" focused={focused} /> }} />
       <Tabs.Screen name="class" options={{ title: 'Class', href: isPending ? null : '/(teacher)/class', tabBarIcon: ({ focused }) => <TabIcon emoji="👥" focused={focused} /> }} />
       <Tabs.Screen name="announce" options={{ title: 'Announce', href: isPending ? null : '/(teacher)/announce', tabBarIcon: ({ focused }) => <TabIcon emoji="📢" focused={focused} /> }} />
+      <Tabs.Screen name="messages" options={{ title: 'Messages', href: isPending ? null : '/(teacher)/messages', tabBarIcon: ({ focused }) => <TabIcon emoji="💬" focused={focused} /> }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} /> }} />
       <Tabs.Screen name="student/[id]" options={{ href: null }} />
     </Tabs>

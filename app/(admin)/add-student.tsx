@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   ScrollView,
   TouchableOpacity,
   Switch,
@@ -17,8 +16,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateStudent } from '@/hooks/useStudents';
 import { useClasses } from '@/hooks/useClasses';
+import { useSearchParents, ExistingParent } from '@/hooks/useParents';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
@@ -47,7 +48,7 @@ export default function AddStudentScreen() {
   const { data: classes, isLoading: classesLoading } = useClasses(profile?.schoolId ?? '');
   const [submitting, setSubmitting] = useState(false);
 
-  const { control, handleSubmit, formState: { errors }, watch } = useForm<FormData>({
+  const { control, handleSubmit, formState: { errors }, watch, setValue, getValues } = useForm<FormData>({
     resolver: zodResolver(addStudentSchema) as any,
     defaultValues: {
       firstName: '',
@@ -265,73 +266,19 @@ export default function AddStudentScreen() {
           </Text>
 
           {fields.map((f, idx) => (
-            <View key={f.id} className="bg-white rounded-2xl p-4 mb-3">
-              <View className="flex-row items-center justify-between mb-2">
-                <Text className="font-sans-semibold text-text-primary">Parent/Guardian {idx + 1}</Text>
-                {fields.length > 1 && (
-                  <TouchableOpacity onPress={() => remove(idx)}>
-                    <Text className="text-error text-xs">Remove</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <Controller
-                control={control}
-                name={`parents.${idx}.name` as const}
-                render={({ field }) => (
-                  <Input
-                    label="Parent/Guardian Name"
-                    required
-                    value={field.value}
-                    onChangeText={field.onChange}
-                    placeholder="Full name"
-                    error={errors.parents?.[idx]?.name?.message}
-                  />
-                )}
-              />
-              <Controller
-                control={control}
-                name={`parents.${idx}.email` as const}
-                render={({ field }) => (
-                  <Input
-                    label="Email"
-                    required
-                    value={field.value}
-                    onChangeText={field.onChange}
-                    placeholder="parent@example.com"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    error={errors.parents?.[idx]?.email?.message}
-                  />
-                )}
-              />
-              <Controller
-                control={control}
-                name={`parents.${idx}.phone` as const}
-                render={({ field }) => (
-                  <View className="mb-4">
-                    <Text className="text-sm font-sans-semibold text-text-primary mb-1">
-                      Phone Number<Text className="text-primary"> *</Text>
-                    </Text>
-                    <View className={`flex-row items-center bg-white border rounded-xl ${errors.parents?.[idx]?.phone ? 'border-error' : 'border-gray-200'}`}>
-                      <View className="bg-gray-100 px-3 py-3 rounded-l-xl border-r border-gray-200">
-                        <Text className="text-base text-text-primary">+61</Text>
-                      </View>
-                      <TextInput
-                        className="flex-1 px-3 py-3 text-base text-text-primary"
-                        value={field.value}
-                        onChangeText={field.onChange}
-                        placeholder="4XX XXX XXX"
-                        placeholderTextColor={COLORS.textMuted}
-                        keyboardType="phone-pad"
-                      />
-                    </View>
-                    {errors.parents?.[idx]?.phone && (
-                      <Text className="text-error text-xs mt-1">{errors.parents[idx]?.phone?.message}</Text>
-                    )}
-                  </View>
-                )}
-              />
-            </View>
+            <ParentBlock
+              key={f.id}
+              idx={idx}
+              control={control}
+              errors={errors}
+              canRemove={fields.length > 1}
+              onRemove={() => remove(idx)}
+              onPickExisting={(p) => {
+                setValue(`parents.${idx}.name`,  p.name,                          { shouldValidate: true });
+                setValue(`parents.${idx}.email`, p.email,                         { shouldValidate: true });
+                setValue(`parents.${idx}.phone`, stripAuPrefix(p.phone ?? ''),    { shouldValidate: true });
+              }}
+            />
           ))}
 
           <Button
@@ -353,5 +300,118 @@ export default function AddStudentScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+function stripAuPrefix(phone: string): string {
+  // Saved form expects 9–10 digit AU phone; strip "+61" or leading 0 etc.
+  const trimmed = phone.trim().replace(/\s+/g, '');
+  if (trimmed.startsWith('+61')) return trimmed.slice(3);
+  if (trimmed.startsWith('0')) return trimmed.slice(1);
+  return trimmed;
+}
+
+function ParentBlock({
+  idx, control, errors, canRemove, onRemove, onPickExisting,
+}: {
+  idx: number;
+  control: any;
+  errors: any;
+  canRemove: boolean;
+  onRemove: () => void;
+  onPickExisting: (p: ExistingParent) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const { data: suggestions } = useSearchParents(open ? search : '');
+
+  return (
+    <View className="bg-white rounded-2xl p-4 mb-3">
+      <View className="flex-row items-center justify-between mb-2">
+        <Text className="font-sans-semibold text-text-primary">Parent/Guardian {idx + 1}</Text>
+        {canRemove && (
+          <TouchableOpacity onPress={onRemove}>
+            <Text className="text-error text-xs">Remove</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Existing-parent search */}
+      <Text className="text-xs mb-1" style={{ color: COLORS.textMuted }}>
+        Existing Parent/Guardian
+      </Text>
+      <Input
+        value={search}
+        onChangeText={(t) => { setSearch(t); setOpen(true); }}
+        placeholder="Search by name…"
+        autoCapitalize="words"
+      />
+      {open && search.trim().length >= 2 ? (
+        <View className="mb-3 -mt-2 bg-gray-50 rounded-xl overflow-hidden border border-gray-200">
+          {!suggestions || suggestions.length === 0 ? (
+            <Text className="text-xs text-text-muted px-3 py-3">No matches — fill in the fields below.</Text>
+          ) : (
+            suggestions.map((p) => (
+              <TouchableOpacity
+                key={p.email}
+                onPress={() => {
+                  onPickExisting(p);
+                  setSearch(p.name);
+                  setOpen(false);
+                }}
+                className="px-3 py-2 border-b border-gray-100"
+                activeOpacity={0.6}
+              >
+                <Text className="text-sm text-text-primary">{p.name || p.email}</Text>
+                <Text className="text-xs text-text-muted">{p.email}{p.phone ? ` · ${p.phone}` : ''}</Text>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+      ) : null}
+
+      <Controller
+        control={control}
+        name={`parents.${idx}.name` as const}
+        render={({ field }) => (
+          <Input
+            label="Parent/Guardian Name"
+            required
+            value={field.value}
+            onChangeText={field.onChange}
+            placeholder="Full name"
+            error={errors.parents?.[idx]?.name?.message}
+          />
+        )}
+      />
+      <Controller
+        control={control}
+        name={`parents.${idx}.email` as const}
+        render={({ field }) => (
+          <Input
+            label="Email"
+            required
+            value={field.value}
+            onChangeText={field.onChange}
+            placeholder="parent@example.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            error={errors.parents?.[idx]?.email?.message}
+          />
+        )}
+      />
+      <Controller
+        control={control}
+        name={`parents.${idx}.phone` as const}
+        render={({ field }) => (
+          <PhoneInput
+            required
+            value={field.value}
+            onChangeText={field.onChange}
+            error={errors.parents?.[idx]?.phone?.message}
+          />
+        )}
+      />
+    </View>
   );
 }

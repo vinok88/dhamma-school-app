@@ -1,22 +1,35 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform,
+  View, Text, ScrollView, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/hooks/useAuth';
-import { useMyClass } from '@/hooks/useClasses';
+import { useMyClasses } from '@/hooks/useClasses';
 import { useCreateAnnouncement } from '@/hooks/useAnnouncements';
+import { ClassPicker } from '@/components/ui/ClassPicker';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { announcementSchema } from '@/utils/schemas';
-import { AnnouncementFormData, AnnouncementType } from '@/types';
-import { ANNOUNCEMENT_TYPE_CONFIG } from '@/constants';
+import { AnnouncementFormData } from '@/types';
 
 export default function SendAnnouncementScreen() {
   const { profile } = useAuth();
-  const { data: myClass } = useMyClass(profile?.id ?? '');
+  const { data: classes } = useMyClasses(profile?.id ?? '');
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!classes?.length) return;
+    if (!selectedClassId || !classes.some((c) => c.id === selectedClassId)) {
+      setSelectedClassId(classes[0].id);
+    }
+  }, [classes, selectedClassId]);
+
+  const myClass = useMemo(
+    () => (classes ?? []).find((c) => c.id === selectedClassId) ?? null,
+    [classes, selectedClassId]
+  );
   const createAnnouncement = useCreateAnnouncement();
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<AnnouncementFormData>({
@@ -26,14 +39,18 @@ export default function SendAnnouncementScreen() {
 
   async function onSubmit(data: AnnouncementFormData) {
     if (!profile) return;
+    if (!myClass?.id) {
+      Alert.alert('No class assigned', 'You need to be assigned to a class before sending announcements.');
+      return;
+    }
     try {
       await createAnnouncement.mutateAsync({
         schoolId: profile.schoolId,
         authorId: profile.id,
         title: data.title,
         body: data.body,
-        type: data.type,
-        targetClassId: data.type === 'class' ? myClass?.id : undefined,
+        type: 'class',
+        targetClassId: myClass.id,
       });
       Alert.alert('Sent!', 'Announcement published successfully.');
       reset();
@@ -42,8 +59,6 @@ export default function SendAnnouncementScreen() {
     }
   }
 
-  const types: AnnouncementType[] = ['school', 'class', 'emergency'];
-
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">
       <View className="bg-scaffold-bg px-5 pt-4 pb-5">
@@ -51,7 +66,18 @@ export default function SendAnnouncementScreen() {
         <Text style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}>
           Send Announcement 📢
         </Text>
+        {myClass?.name ? (
+          <Text className="text-sm mt-1" style={{ color: '#8B7D6B' }}>
+            Class: {myClass.name}
+          </Text>
+        ) : null}
       </View>
+
+      <ClassPicker
+        classes={classes ?? []}
+        selectedId={selectedClassId ?? undefined}
+        onSelect={setSelectedClassId}
+      />
 
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView className="flex-1 px-4 pt-5" keyboardShouldPersistTaps="handled">
@@ -74,32 +100,11 @@ export default function SendAnnouncementScreen() {
             )}
           />
 
-          {/* Type picker */}
-          <Text className="text-sm font-sans-semibold text-text-primary mb-2">Type <Text className="text-primary">*</Text></Text>
-          <Controller
-            control={control}
-            name="type"
-            render={({ field }) => (
-              <View className="flex-row gap-2 mb-6">
-                {types.map((t) => {
-                  const cfg = ANNOUNCEMENT_TYPE_CONFIG[t];
-                  const active = field.value === t;
-                  return (
-                    <TouchableOpacity
-                      key={t}
-                      onPress={() => field.onChange(t)}
-                      className={`flex-1 py-3 rounded-xl items-center border-2 ${active ? 'border-primary' : 'border-gray-200 bg-white'}`}
-                      style={active ? { backgroundColor: cfg.color + '15', borderColor: cfg.color } : {}}
-                    >
-                      <Text className="text-xs font-sans-semibold" style={active ? { color: cfg.color } : { color: '#6B7280' }}>
-                        {cfg.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
-          />
+          <View className="mb-4 p-3 rounded-xl" style={{ backgroundColor: '#F3F4F6' }}>
+            <Text className="text-xs" style={{ color: '#6B7280' }}>
+              This will be sent to parents and students of {myClass?.name ?? 'your class'} only.
+            </Text>
+          </View>
 
           <Button label="Publish Announcement" onPress={handleSubmit(onSubmit)}
             loading={createAnnouncement.isPending} fullWidth />

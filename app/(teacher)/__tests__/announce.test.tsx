@@ -9,6 +9,8 @@ jest.mock('@/hooks/useAuth', () => ({
 
 jest.mock('@/hooks/useClasses', () => ({
   useMyClass: () => require('@/test-utils/fixtures').queryOk({ id: 'c1', name: 'Year 2' }),
+  useMyClasses: () =>
+    require('@/test-utils/fixtures').queryOk([{ id: 'c1', name: 'Year 2', gradeLevel: 'Year 2', studentCount: 0 }]),
 }));
 
 jest.mock('@/hooks/useAnnouncements', () => ({

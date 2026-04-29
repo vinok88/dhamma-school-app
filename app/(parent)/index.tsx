@@ -52,17 +52,18 @@ export default function ParentHome() {
     <SafeAreaView className="flex-1 bg-scaffold-bg">
       <View className="bg-scaffold-bg px-5 pt-4 pb-6">
         <View className="flex-row items-center justify-between">
-          <View>
+          <View className="flex-1 mr-2">
             <Text className="text-xs tracking-widest uppercase mb-1" style={{ color: COLORS.textMuted }}>
               Good Morning
             </Text>
             <Text
+              numberOfLines={1}
               style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}
             >
               {displayName} 🙏
             </Text>
           </View>
-          <View className="flex-row items-center">
+          <View className="flex-row items-center" style={{ flexShrink: 0 }}>
             <TouchableOpacity
               onPress={handleRefresh}
               className="p-2 mr-1"

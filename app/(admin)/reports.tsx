@@ -127,7 +127,7 @@ export default function ReportsScreen() {
               <Text className="flex-1 text-white text-xs font-sans-semibold">Student</Text>
               <Text className="w-12 text-white text-xs font-sans-semibold text-center">Pres.</Text>
               <Text className="w-12 text-white text-xs font-sans-semibold text-center">Abs.</Text>
-              <Text className="w-14 text-white text-xs font-sans-semibold text-center">Rate</Text>
+              <Text className="w-20 text-white text-xs font-sans-semibold text-center">Attendance %</Text>
             </View>
             {rows.map((r, i) => (
               <View
@@ -137,7 +137,7 @@ export default function ReportsScreen() {
                 <Text className="flex-1 text-sm text-text-primary" numberOfLines={1}>{r.name}</Text>
                 <Text className="w-12 text-sm text-success text-center">{r.present}</Text>
                 <Text className="w-12 text-sm text-error text-center">{r.absent}</Text>
-                <Text className={`w-14 text-sm font-sans-semibold text-center ${r.percentage >= 80 ? 'text-success' : r.percentage >= 60 ? 'text-pending' : 'text-error'}`}>
+                <Text className={`w-20 text-sm font-sans-semibold text-center ${r.percentage >= 80 ? 'text-success' : r.percentage >= 60 ? 'text-pending' : 'text-error'}`}>
                   {r.percentage}%
                 </Text>
               </View>

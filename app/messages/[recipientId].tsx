@@ -12,7 +12,7 @@ import { formatTime } from '@/utils/date';
 import { COLORS } from '@/constants';
 
 export default function MessageThreadScreen() {
-  const { recipientId } = useLocalSearchParams<{ recipientId: string }>();
+  const { recipientId, name } = useLocalSearchParams<{ recipientId: string; name?: string }>();
   const { profile } = useAuth();
   const userId = profile?.id ?? '';
 
@@ -23,7 +23,9 @@ export default function MessageThreadScreen() {
   const listRef = useRef<FlatList>(null);
 
   const recipient = conversations?.find((c) => c.recipientId === recipientId);
-  const recipientName = recipient?.recipientName ?? 'Message';
+  // Prefer a known thread's name; fall back to the param passed when starting a
+  // brand-new conversation; finally a generic label.
+  const recipientName = recipient?.recipientName ?? name ?? 'Message';
 
   async function handleSend() {
     const trimmed = text.trim();

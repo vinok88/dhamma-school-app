@@ -21,7 +21,7 @@ import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 import { ProfileFormData } from '@/types';
 
 export default function ParentProfile() {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, refreshProfile } = useAuth();
   const updateProfile = useUpdateProfile();
   const uploadPhoto = useUploadProfilePhoto();
   const [editing, setEditing] = useState(false);
@@ -39,6 +39,7 @@ export default function ParentProfile() {
     if (!profile) return;
     try {
       await updateProfile.mutateAsync({ userId: profile.id, ...data });
+      await refreshProfile();
       setEditing(false);
     } catch {
       Alert.alert('Error', 'Could not update profile');
@@ -54,7 +55,12 @@ export default function ParentProfile() {
       quality: 0.8,
     });
     if (!result.canceled) {
-      await uploadPhoto.mutateAsync({ userId: profile.id, uri: result.assets[0].uri });
+      try {
+        await uploadPhoto.mutateAsync({ userId: profile.id, uri: result.assets[0].uri });
+        await refreshProfile();
+      } catch (e: unknown) {
+        Alert.alert('Error', e instanceof Error ? e.message : 'Could not upload photo');
+      }
     }
   }
 

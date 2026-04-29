@@ -174,6 +174,16 @@ CREATE POLICY "Attendance: teacher update"
     AND get_my_role() = 'teacher'
   );
 
+-- Teachers can delete their own attendance records (used by "Undo Check-In",
+-- which removes the row entirely so the slate is clean).
+CREATE POLICY "Attendance: teacher delete"
+  ON attendance_records FOR DELETE
+  TO authenticated
+  USING (
+    teacher_id = auth.uid()
+    AND get_my_role() = 'teacher'
+  );
+
 CREATE POLICY "Attendance: teacher read class"
   ON attendance_records FOR SELECT
   TO authenticated

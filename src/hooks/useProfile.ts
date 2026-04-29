@@ -30,6 +30,7 @@ export function useUpdateProfile() {
 }
 
 export function useUploadProfilePhoto() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ userId, uri }: { userId: string; uri: string }) => {
       const base64 = await FileSystem.readAsStringAsync(uri, {
@@ -41,11 +42,18 @@ export function useUploadProfilePhoto() {
         .from(STORAGE.PROFILE_PHOTOS)
         .upload(path, decode(base64), { contentType: `image/${ext}`, upsert: true });
       if (error) throw error;
-      const { data: urlData } = await supabase.storage
-        .from(STORAGE.PROFILE_PHOTOS)
-        .createSignedUrl(path, 3600);
-      return urlData?.signedUrl ?? null;
+
+      // Persist the path on the user's profile so other places (header avatars,
+      // admin views) pick it up after a refresh.
+      const { error: updateErr } = await supabase
+        .from(TABLES.USER_PROFILES)
+        .update({ profile_photo_url: path, updated_at: new Date().toISOString() })
+        .eq('id', userId);
+      if (updateErr) throw updateErr;
+
+      return path;
     },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['profile'] }),
   });
 }
 

@@ -47,6 +47,8 @@ export interface StudentModel {
   address?: string;
   classId?: string;
   className?: string;
+  classTeacherId?: string;
+  classTeacherName?: string;
   status: StudentStatus;
   statusNote?: string;
   parents: StudentParentLink[];

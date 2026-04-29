@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   Image,
   ScrollView,
   Alert,
@@ -14,10 +13,11 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
-import { TABLES, COLORS } from '@/constants';
+import { TABLES } from '@/constants';
 import { completeProfileSchema } from '@/utils/schemas';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 
 type FormData = {
@@ -130,25 +130,12 @@ export default function CompleteProfileScreen() {
               control={control}
               name="phone"
               render={({ field }) => (
-                <View className="mb-4">
-                  <Text className="text-sm font-sans-semibold text-text-primary mb-1">
-                    Phone Number<Text className="text-primary"> *</Text>
-                  </Text>
-                  <View className={`flex-row items-center bg-white border rounded-xl ${errors.phone ? 'border-error' : 'border-gray-200'}`}>
-                    <View className="bg-gray-100 px-3 py-3 rounded-l-xl border-r border-gray-200">
-                      <Text className="text-base text-text-primary">+61</Text>
-                    </View>
-                    <TextInput
-                      className="flex-1 px-3 py-3 text-base text-text-primary"
-                      value={field.value}
-                      onChangeText={field.onChange}
-                      placeholder="4XX XXX XXX"
-                      placeholderTextColor={COLORS.textMuted}
-                      keyboardType="phone-pad"
-                    />
-                  </View>
-                  {errors.phone && <Text className="text-error text-xs mt-1">{errors.phone.message}</Text>}
-                </View>
+                <PhoneInput
+                  required
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  error={errors.phone?.message}
+                />
               )}
             />
 

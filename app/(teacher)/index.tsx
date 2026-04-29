@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
-import { useMyClass } from '@/hooks/useClasses';
+import { useMyClasses } from '@/hooks/useClasses';
 import { useAnnouncements } from '@/hooks/useAnnouncements';
 import { useTodayAttendance } from '@/hooks/useAttendance';
 import { AnnouncementCard } from '@/components/AnnouncementCard';
@@ -16,9 +16,10 @@ export default function TeacherHome() {
   const router = useRouter();
   const { profile, signOut } = useAuth();
   const isPending = profile?.status !== 'active';
-  const { data: myClass, isLoading: classLoading } = useMyClass(profile?.id ?? '');
-  const { data: attendance } = useTodayAttendance(myClass?.id ?? '', lastSunday());
-  const { data: announcements } = useAnnouncements(profile?.schoolId ?? '', myClass?.id);
+  const { data: classes, isLoading: classLoading } = useMyClasses(profile?.id ?? '');
+  const primaryClass = classes?.[0] ?? null;
+  const { data: attendance } = useTodayAttendance(primaryClass?.id ?? '', lastSunday());
+  const { data: announcements } = useAnnouncements(profile?.schoolId ?? '', primaryClass?.id);
 
   const presentCount = attendance?.filter((a) => a.status !== 'absent').length ?? 0;
   const totalCount = attendance?.length ?? 0;
@@ -60,46 +61,62 @@ export default function TeacherHome() {
     <SafeAreaView className="flex-1 bg-scaffold-bg">
       <View className="bg-scaffold-bg px-5 pt-4 pb-6">
         <View className="flex-row items-center justify-between">
-          <View>
+          <View className="flex-1 mr-2">
             <Text className="text-xs tracking-widest uppercase mb-1" style={{ color: '#8B7D6B' }}>Welcome back</Text>
-            <Text style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}>
+            <Text
+              numberOfLines={1}
+              style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}
+            >
               {displayName} 🙏
             </Text>
           </View>
-          <TouchableOpacity onPress={() => router.push('/notifications')} className="p-2">
+          <TouchableOpacity onPress={() => router.push('/notifications')} className="p-2" style={{ flexShrink: 0 }}>
             <Text style={{ fontSize: 22 }}>🔔</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView className="flex-1 px-4 pt-4" showsVerticalScrollIndicator={false}>
-        {/* Class card */}
+        {/* Class card(s) */}
         {classLoading ? (
           <LoadingSpinner />
-        ) : myClass ? (
-          <Card className="mb-4" style={{ backgroundColor: COLORS.primary }}>
-            <Text className="text-xs mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>Your Class</Text>
-            <Text className="text-white text-xl font-sans-semibold">{myClass.name}</Text>
-            <Text className="text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>{myClass.gradeLevel}</Text>
-            <View className="flex-row mt-4 gap-4">
-              <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
-                <Text className="text-white text-xl font-sans-semibold">{myClass.studentCount}</Text>
-                <Text className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>Students</Text>
-              </View>
-              <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(76,175,135,0.35)' }}>
-                <Text className="text-white text-xl font-sans-semibold">{presentCount}</Text>
-                <Text className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>Present</Text>
-              </View>
-              <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(192,57,43,0.35)' }}>
-                <Text className="text-white text-xl font-sans-semibold">{totalCount - presentCount}</Text>
-                <Text className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>Absent</Text>
-              </View>
-            </View>
-          </Card>
-        ) : (
+        ) : !classes?.length ? (
           <Card className="mb-4">
             <Text className="text-text-muted text-sm">You haven't been assigned to a class yet.</Text>
           </Card>
+        ) : (
+          <>
+            {classes.length > 1 ? (
+              <Text className="text-xs tracking-widest uppercase mb-2" style={{ color: '#8B7D6B' }}>
+                Your Classes ({classes.length})
+              </Text>
+            ) : null}
+            {classes.map((c, idx) => (
+              <Card key={c.id} className="mb-3" style={{ backgroundColor: COLORS.primary }}>
+                <Text className="text-xs mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>Class</Text>
+                <Text className="text-white text-xl font-sans-semibold">{c.name}</Text>
+                <Text className="text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>{c.gradeLevel}</Text>
+                <View className="flex-row mt-4 gap-4">
+                  <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+                    <Text className="text-white text-xl font-sans-semibold">{c.studentCount}</Text>
+                    <Text className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>Students</Text>
+                  </View>
+                  {idx === 0 ? (
+                    <>
+                      <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(76,175,135,0.35)' }}>
+                        <Text className="text-white text-xl font-sans-semibold">{presentCount}</Text>
+                        <Text className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>Present</Text>
+                      </View>
+                      <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(192,57,43,0.35)' }}>
+                        <Text className="text-white text-xl font-sans-semibold">{totalCount - presentCount}</Text>
+                        <Text className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>Absent</Text>
+                      </View>
+                    </>
+                  ) : null}
+                </View>
+              </Card>
+            ))}
+          </>
         )}
 
         {/* Quick actions */}
