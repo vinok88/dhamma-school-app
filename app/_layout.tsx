@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { AppState } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/query-client';
@@ -27,6 +28,17 @@ function RootLayoutNav() {
   const { session, profile, loading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
+
+  // Clear the launcher app-icon badge on every foreground.
+  // Push notifications increment it via setNotificationHandler; nothing else
+  // clears it, so without this the badge accumulates and stays "stuck".
+  useEffect(() => {
+    Notifications.setBadgeCountAsync(0).catch(() => {});
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') Notifications.setBadgeCountAsync(0).catch(() => {});
+    });
+    return () => sub.remove();
+  }, []);
 
 
   // Fix 7: Register FCM push token on login
