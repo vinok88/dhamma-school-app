@@ -20,6 +20,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { toIsoDate, lastSunday, formatDate, formatTime } from '@/utils/date';
 import { ATTENDANCE_STATUS_CONFIG } from '@/constants';
 import { AttendanceModel } from '@/types';
+import { showFriendlyError } from '@/utils/errors';
 
 function AttendanceRow({
   student, record, onCheckIn, onCheckOut, onAbsent, onUndoCheckIn, onUndoCheckOut,
@@ -165,8 +166,8 @@ export default function AttendanceScreen() {
         classId: myClass.id,
         sessionDate: sessionDateStr,
       });
-    } catch {
-      Alert.alert('Error', 'Could not check in student');
+    } catch (e: unknown) {
+      showFriendlyError("Couldn't check in", e, 'attendance-checkin');
     }
   }
 
@@ -200,11 +201,7 @@ export default function AttendanceScreen() {
             try {
               await undoCheckIn.mutateAsync({ attendanceId, classId: myClass.id });
             } catch (e: unknown) {
-              const msg =
-                e instanceof Error
-                  ? e.message
-                  : (e as { message?: string })?.message ?? 'Could not undo check-in';
-              Alert.alert('Error', msg);
+              showFriendlyError("Couldn't undo check-in", e, 'attendance-undo-checkin');
             }
           },
         },

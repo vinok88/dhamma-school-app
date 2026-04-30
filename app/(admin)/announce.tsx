@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { announcementSchema } from '@/utils/schemas';
 import { AnnouncementFormData, AnnouncementType } from '@/types';
 import { ANNOUNCEMENT_TYPE_CONFIG } from '@/constants';
+import { showFriendlyError } from '@/utils/errors';
 
 const ALL_TYPES: AnnouncementType[] = ['school', 'class', 'emergency', 'event_reminder'];
 
@@ -42,8 +43,8 @@ export default function AdminAnnounceScreen() {
       });
       Alert.alert('Published!', 'Announcement sent to all recipients.');
       reset();
-    } catch {
-      Alert.alert('Error', 'Could not publish announcement');
+    } catch (e: unknown) {
+      showFriendlyError("Couldn't publish announcement", e, 'admin-announce');
     }
   }
 

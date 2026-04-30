@@ -2,9 +2,13 @@
 --
 -- The signup flow:
 --   1. Client calls resolve_user_role_for_signup(email) right after signing in.
---   2. The RPC checks teacher_invitations → student_parents → guest, links the
---      user to matching rows, and returns the role.
---   3. Client inserts the user_profiles row using that role.
+--      This RPC is read-only — it just returns 'teacher' / 'parent' / 'guest'.
+--   2. Client inserts the user_profiles row using that role.
+--   3. An AFTER-INSERT trigger on user_profiles claims any matching
+--      student_parents / teacher_invitations rows by email. Doing the linking
+--      in a trigger (instead of inside the RPC) avoids a chicken-and-egg FK
+--      violation: parent_user_id / claimed_by reference user_profiles(id),
+--      which doesn't exist until step 2 commits.
 --
 -- After signup, refresh_my_role() can be invoked from the home-screen "refresh"
 -- button to re-check (e.g. principal added the email later).
@@ -14,29 +18,49 @@ RETURNS user_role
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   email_lc TEXT := lower(p_email);
-  v_uid UUID := auth.uid();
-  v_role user_role;
 BEGIN
-  IF v_uid IS NULL THEN
+  IF auth.uid() IS NULL THEN
     RAISE EXCEPTION 'resolve_user_role_for_signup requires authenticated user';
   END IF;
 
   IF EXISTS (SELECT 1 FROM teacher_invitations WHERE lower(email) = email_lc) THEN
-    UPDATE teacher_invitations
-       SET claimed_by = v_uid
-     WHERE lower(email) = email_lc;
-    v_role := 'teacher';
+    RETURN 'teacher';
   ELSIF EXISTS (SELECT 1 FROM student_parents WHERE lower(parent_email) = email_lc) THEN
-    UPDATE student_parents
-       SET parent_user_id = v_uid
-     WHERE lower(parent_email) = email_lc;
-    v_role := 'parent';
+    RETURN 'parent';
   ELSE
-    v_role := 'guest';
+    RETURN 'guest';
   END IF;
-
-  RETURN v_role;
 END $$;
+
+-- Link any matching student_parents / teacher_invitations rows when the
+-- corresponding user_profiles row is created.
+CREATE OR REPLACE FUNCTION link_invitations_on_profile_insert()
+RETURNS TRIGGER
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_email TEXT;
+BEGIN
+  SELECT email INTO v_email FROM auth.users WHERE id = NEW.id;
+  IF v_email IS NULL THEN RETURN NEW; END IF;
+  v_email := lower(v_email);
+
+  UPDATE student_parents
+     SET parent_user_id = NEW.id
+   WHERE lower(parent_email) = v_email
+     AND parent_user_id IS NULL;
+
+  UPDATE teacher_invitations
+     SET claimed_by = NEW.id
+   WHERE lower(email) = v_email
+     AND claimed_by IS NULL;
+
+  RETURN NEW;
+END $$;
+
+DROP TRIGGER IF EXISTS up_link_on_insert ON user_profiles;
+CREATE TRIGGER up_link_on_insert
+  AFTER INSERT ON user_profiles
+  FOR EACH ROW EXECUTE FUNCTION link_invitations_on_profile_insert();
 
 CREATE OR REPLACE FUNCTION refresh_my_role()
 RETURNS user_role

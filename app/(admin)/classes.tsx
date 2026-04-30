@@ -14,6 +14,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ClassFormData } from '@/types';
 import { COLORS } from '@/constants';
+import { showFriendlyError } from '@/utils/errors';
 
 export default function ClassesScreen() {
   const { profile } = useAuth();
@@ -46,8 +47,8 @@ export default function ClassesScreen() {
       }
       setModalVisible(false);
       reset();
-    } catch {
-      Alert.alert('Error', 'Could not save class');
+    } catch (e: unknown) {
+      showFriendlyError("Couldn't save class", e, 'admin-classes');
     }
   }
 

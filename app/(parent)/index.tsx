@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Animated, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Animated } from 'react-native';
+import { showFriendlyError } from '@/utils/errors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
@@ -40,7 +41,7 @@ export default function ParentHome() {
       await refreshMyRole();
       await refetchStudents();
     } catch (e: unknown) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Could not refresh');
+      showFriendlyError("Couldn't refresh", e, 'parent-home');
     } finally {
       setRefreshingRole(false);
     }

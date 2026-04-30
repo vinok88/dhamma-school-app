@@ -15,6 +15,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { COLORS } from '@/constants';
+import { showFriendlyError } from '@/utils/errors';
 
 type FormData = {
   preferredName: string;
@@ -96,11 +97,7 @@ export default function StudentEditScreen() {
 
       Alert.alert('Saved', 'Profile updated.', [{ text: 'OK', onPress: () => router.back() }]);
     } catch (e: unknown) {
-      const msg =
-        e instanceof Error
-          ? e.message
-          : (e as { message?: string })?.message ?? 'Could not save changes';
-      Alert.alert('Error', msg);
+      showFriendlyError("Couldn't save changes", e, 'student-edit');
     } finally {
       setSaving(false);
     }

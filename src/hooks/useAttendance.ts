@@ -130,9 +130,7 @@ export function useUndoCheckIn() {
         .select();
       if (error) throw error;
       if (!data || data.length === 0) {
-        throw new Error(
-          'Could not undo check-in. Your account may not have permission — ask the principal to apply the latest DB migration.'
-        );
+        throw new Error('No attendance row was deleted');
       }
     },
     onSuccess: (_, vars) =>

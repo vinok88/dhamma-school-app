@@ -15,6 +15,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { EventFormData, EventType } from '@/types';
 import { EVENT_TYPE_CONFIG } from '@/constants';
+import { showFriendlyError } from '@/utils/errors';
 
 export default function EventsScreen() {
   const { profile } = useAuth();
@@ -43,8 +44,8 @@ export default function EventsScreen() {
       });
       setModalVisible(false);
       reset();
-    } catch {
-      Alert.alert('Error', 'Could not create event');
+    } catch (e: unknown) {
+      showFriendlyError("Couldn't create event", e, 'admin-event');
     }
   }
 

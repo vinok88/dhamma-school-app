@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { TABLES } from '@/constants';
 import { completeProfileSchema } from '@/utils/schemas';
+import { showFriendlyError } from '@/utils/errors';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { PhoneInput } from '@/components/ui/PhoneInput';
@@ -66,7 +67,7 @@ export default function CompleteProfileScreen() {
       if (error) throw error;
       await refreshProfile();
     } catch (e: unknown) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Could not save profile');
+      showFriendlyError("Couldn't save profile", e, 'complete-profile');
     } finally {
       setSaving(false);
     }

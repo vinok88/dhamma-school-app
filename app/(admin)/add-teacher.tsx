@@ -12,6 +12,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 import { addTeacherSchema } from '@/utils/schemas';
 import { COLORS } from '@/constants';
+import { showFriendlyError } from '@/utils/errors';
 
 type FormData = {
   fullName: string;
@@ -48,8 +49,7 @@ export default function AddTeacherScreen() {
         [{ text: 'OK', onPress: () => router.back() }]
       );
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Could not add teacher';
-      Alert.alert('Error', msg);
+      showFriendlyError("Couldn't add teacher", e, 'add-teacher');
     } finally {
       setSubmitting(false);
     }

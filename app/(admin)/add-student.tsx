@@ -26,6 +26,7 @@ import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 import { addStudentSchema } from '@/utils/schemas';
 import { calculateAge } from '@/utils/date';
 import { COLORS } from '@/constants';
+import { showFriendlyError } from '@/utils/errors';
 
 type FormData = {
   firstName: string;
@@ -107,12 +108,7 @@ export default function AddStudentScreen() {
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (e: unknown) {
-      const msg =
-        e instanceof Error
-          ? e.message
-          : (e as { message?: string; details?: string; hint?: string })?.message
-            ?? JSON.stringify(e);
-      Alert.alert('Error', msg || 'Could not add student');
+      showFriendlyError("Couldn't add student", e, 'add-student');
     } finally {
       setSubmitting(false);
     }

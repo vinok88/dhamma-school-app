@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { announcementSchema } from '@/utils/schemas';
 import { AnnouncementFormData } from '@/types';
+import { showFriendlyError } from '@/utils/errors';
 
 export default function SendAnnouncementScreen() {
   const { profile } = useAuth();
@@ -54,8 +55,8 @@ export default function SendAnnouncementScreen() {
       });
       Alert.alert('Sent!', 'Announcement published successfully.');
       reset();
-    } catch {
-      Alert.alert('Error', 'Could not publish announcement');
+    } catch (e: unknown) {
+      showFriendlyError("Couldn't publish announcement", e, 'teacher-announce');
     }
   }
 

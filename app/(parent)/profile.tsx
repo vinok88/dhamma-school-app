@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 import { ProfileFormData } from '@/types';
+import { showFriendlyError } from '@/utils/errors';
 
 export default function ParentProfile() {
   const { profile, signOut, refreshProfile } = useAuth();
@@ -41,8 +42,8 @@ export default function ParentProfile() {
       await updateProfile.mutateAsync({ userId: profile.id, ...data });
       await refreshProfile();
       setEditing(false);
-    } catch {
-      Alert.alert('Error', 'Could not update profile');
+    } catch (e: unknown) {
+      showFriendlyError("Couldn't update profile", e, 'parent-profile');
     }
   }
 
@@ -59,7 +60,7 @@ export default function ParentProfile() {
         await uploadPhoto.mutateAsync({ userId: profile.id, uri: result.assets[0].uri });
         await refreshProfile();
       } catch (e: unknown) {
-        Alert.alert('Error', e instanceof Error ? e.message : 'Could not upload photo');
+        showFriendlyError("Couldn't upload photo", e, 'parent-profile-photo');
       }
     }
   }

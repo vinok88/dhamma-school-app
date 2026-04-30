@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { COLORS, APP_FULL_NAME } from '@/constants';
+import { showFriendlyError } from '@/utils/errors';
 
 // TODO: Place the Buddhist pagoda/temple watercolour illustration at assets/images/pagoda.png
 const PAGODA_IMAGE = require('../../assets/images/pagoda.png');
@@ -25,7 +26,7 @@ export default function LoginScreen() {
       setLoading(true);
       await signInWithGoogle();
     } catch (e: unknown) {
-      Alert.alert('Sign-in failed', e instanceof Error ? e.message : 'Unknown error');
+      showFriendlyError('Sign-in failed', e, 'google-signin');
     } finally {
       setLoading(false);
     }

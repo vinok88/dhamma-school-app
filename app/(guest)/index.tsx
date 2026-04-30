@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 import { COLORS } from '@/constants';
+import { showFriendlyError } from '@/utils/errors';
 
 export default function GuestWelcomeScreen() {
   const { profile, signOut, refreshMyRole } = useAuth();
@@ -22,7 +23,7 @@ export default function GuestWelcomeScreen() {
         );
       }
     } catch (e: unknown) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Could not refresh');
+      showFriendlyError("Couldn't refresh", e, 'guest-home');
     } finally {
       setRefreshing(false);
     }
