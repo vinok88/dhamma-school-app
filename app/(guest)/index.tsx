@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 import { COLORS } from '@/constants';
 import { showFriendlyError } from '@/utils/errors';
+import { userGreetingName } from '@/utils/display';
 
 export default function GuestWelcomeScreen() {
   const { profile, signOut, refreshMyRole } = useAuth();
@@ -41,7 +42,10 @@ export default function GuestWelcomeScreen() {
           className="text-center mt-4 mb-2"
           style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}
         >
-          Welcome{profile?.preferredName ? `, ${profile.preferredName}` : ''}
+          {(() => {
+            const name = userGreetingName(profile, '');
+            return name ? `Welcome, ${name}` : 'Welcome';
+          })()}
         </Text>
         <Text className="text-center text-sm mb-6" style={{ color: COLORS.textMuted }}>
           This app is for enrolled families and staff of the Mahamevnawa Dhamma School.

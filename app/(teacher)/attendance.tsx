@@ -21,6 +21,7 @@ import { toIsoDate, lastSunday, formatDate, formatTime } from '@/utils/date';
 import { ATTENDANCE_STATUS_CONFIG } from '@/constants';
 import { AttendanceModel } from '@/types';
 import { showFriendlyError } from '@/utils/errors';
+import { studentDisplayName } from '@/utils/display';
 
 function AttendanceRow({
   student, record, onCheckIn, onCheckOut, onAbsent, onUndoCheckIn, onUndoCheckOut,
@@ -43,10 +44,10 @@ function AttendanceRow({
       style={{ shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 }}
     >
       <View className="flex-row items-center">
-        <Avatar uri={signedPhotoUrl ?? undefined} name={`${student.firstName} ${student.lastName}`} size={48} />
+        <Avatar uri={signedPhotoUrl ?? undefined} name={studentDisplayName(student)} size={48} />
         <View className="flex-1 ml-3">
           <Text className="font-sans-semibold text-text-primary">
-            {student.preferredName ?? student.firstName} {student.lastName}
+            {studentDisplayName(student)}
           </Text>
           {cfg ? (
             <View className="mt-1 px-2 py-0.5 rounded-full self-start" style={{ backgroundColor: cfg.bg }}>

@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatDate, formatAge, formatDateShort, formatTime } from '@/utils/date';
 import { ATTENDANCE_STATUS_CONFIG, COLORS } from '@/constants';
+import { studentDisplayName } from '@/utils/display';
 
 export default function StudentStatusScreen() {
   const router = useRouter();
@@ -63,7 +64,7 @@ export default function StudentStatusScreen() {
                 className="text-text-primary"
                 style={{ fontSize: 20, fontFamily: 'DMSerifDisplay_400Regular' }}
               >
-                {student.preferredName ?? student.firstName} {student.lastName}
+                {studentDisplayName(student)}
               </Text>
               <Text className="text-text-muted text-sm">{formatAge(student.dob)}</Text>
               <View className="mt-2">

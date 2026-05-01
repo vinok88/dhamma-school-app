@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { StudentModel } from '@/types';
 import { Avatar } from './ui/Avatar';
 import { formatAge } from '@/utils/date';
+import { studentDisplayName } from '@/utils/display';
 import { useStudentPhotoUrl } from '@/hooks/useProfile';
 import { COLORS } from '@/constants';
 
@@ -23,10 +24,10 @@ export function StudentCard({ student, routePrefix = '' }: StudentCardProps) {
       style={{ backgroundColor: COLORS.primary, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 2 }}
       activeOpacity={0.85}
     >
-      <Avatar uri={signedPhotoUrl ?? undefined} name={`${student.firstName} ${student.lastName}`} size={52} />
+      <Avatar uri={signedPhotoUrl ?? undefined} name={studentDisplayName(student)} size={52} />
       <View className="flex-1 ml-3">
         <Text className="text-base font-sans-semibold text-white">
-          {student.preferredName ?? student.firstName} {student.lastName}
+          {studentDisplayName(student)}
         </Text>
         <Text className="text-sm" style={{ color: 'rgba(255,255,255,0.75)' }}>
           {formatAge(student.dob)}{student.className ? ` · ${student.className}` : ''}

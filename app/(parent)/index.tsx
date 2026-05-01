@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Animated } from 'react-native';
 import { showFriendlyError } from '@/utils/errors';
+import { userGreetingName } from '@/utils/display';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
@@ -47,7 +48,7 @@ export default function ParentHome() {
     }
   }
 
-  const displayName = profile?.preferredName ?? profile?.fullName?.split(' ')[0] ?? 'there';
+  const displayName = userGreetingName(profile, 'there');
 
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">

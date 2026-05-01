@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { toIsoDate, lastSunday } from '@/utils/date';
 import { COLORS } from '@/constants';
+import { userGreetingName } from '@/utils/display';
 
 export default function TeacherHome() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function TeacherHome() {
   const presentCount = attendance?.filter((a) => a.status !== 'absent').length ?? 0;
   const totalCount = attendance?.length ?? 0;
 
-  const displayName = profile?.preferredName ?? profile?.fullName?.split(' ')[0] ?? 'Teacher';
+  const displayName = userGreetingName(profile, 'Teacher');
 
   if (isPending) {
     return (

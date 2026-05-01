@@ -93,9 +93,9 @@ export default function AddStudentScreen() {
       await createStudent.mutateAsync({
         schoolId: profile.schoolId,
         classId: data.classId,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        preferredName: data.preferredName,
+        firstName: data.firstName.trim(),
+        lastName: data.lastName.trim(),
+        preferredName: data.preferredName?.trim() || undefined,
         dob: data.dob,
         gender: data.gender,
         address: data.address,

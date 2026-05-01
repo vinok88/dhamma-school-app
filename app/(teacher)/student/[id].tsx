@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatDate, formatAge, formatDateShort, formatTime } from '@/utils/date';
+import { studentDisplayName } from '@/utils/display';
 import { ATTENDANCE_STATUS_CONFIG, COLORS } from '@/constants';
 
 export default function StudentDetailScreen() {
@@ -41,7 +42,7 @@ export default function StudentDetailScreen() {
             )}
             <View className="ml-4 flex-1">
               <Text className="text-lg font-sans-semibold text-text-primary">
-                {student.preferredName ?? student.firstName} {student.lastName}
+                {studentDisplayName(student)}
               </Text>
               <Text className="text-sm text-text-muted">{formatAge(student.dob)}</Text>
               <Badge label="" type="student" status={student.status} />
