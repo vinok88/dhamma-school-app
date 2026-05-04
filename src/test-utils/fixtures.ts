@@ -58,6 +58,7 @@ export function makeStudent(overrides: Partial<StudentModel> = {}): StudentModel
     address: '1 Test St',
     classId: 'class-1',
     className: 'Year 2',
+    classTeachers: [],
     status: 'active',
     statusNote: undefined,
     parents: [

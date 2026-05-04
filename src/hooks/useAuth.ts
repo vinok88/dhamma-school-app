@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext, createContext, useCallback, useRef } from 'react';
 import { AppState } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import { Session, User } from '@supabase/supabase-js';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { supabase } from '@/lib/supabase';
@@ -11,12 +12,18 @@ interface AuthContextType {
   user: User | null;
   profile: UserModel | null;
   loading: boolean;
+  /** UI-effective role. May differ from `profile.role` if the user has switched view. */
+  viewMode: UserRole | null;
+  /** Override the UI view mode. Persists per user. */
+  setViewMode: (role: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   resolveRoleForSignup: (email: string) => Promise<UserRole>;
   refreshMyRole: () => Promise<UserRole | null>;
 }
+
+const VIEW_MODE_KEY = (userId: string) => `viewMode:${userId}`;
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -25,6 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserModel | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewModeOverride, setViewModeOverride] = useState<UserRole | null>(null);
 
   const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
@@ -107,7 +115,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => sub.remove();
   }, [user?.id, fetchProfile]);
 
+  // Hydrate persisted view-mode override whenever the user changes.
+  useEffect(() => {
+    if (!user?.id) {
+      setViewModeOverride(null);
+      return;
+    }
+    SecureStore.getItemAsync(VIEW_MODE_KEY(user.id))
+      .then((v) => {
+        if (v === 'parent' || v === 'teacher' || v === 'admin' || v === 'principal' || v === 'guest') {
+          setViewModeOverride(v);
+        } else {
+          setViewModeOverride(null);
+        }
+      })
+      .catch(() => setViewModeOverride(null));
+  }, [user?.id]);
+
+  async function setViewMode(role: UserRole) {
+    setViewModeOverride(role);
+    if (user?.id) {
+      try {
+        await SecureStore.setItemAsync(VIEW_MODE_KEY(user.id), role);
+      } catch {
+        // Non-fatal — override stays in memory for this session.
+      }
+    }
+  }
+
   async function signOut() {
+    if (user?.id) {
+      try { await SecureStore.deleteItemAsync(VIEW_MODE_KEY(user.id)); } catch { /* */ }
+    }
+    setViewModeOverride(null);
     await supabase.auth.signOut();
   }
 
@@ -145,12 +185,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return (data ?? null) as UserRole | null;
   }
 
+  // Effective UI role: override if set, otherwise the actual DB role.
+  const viewMode: UserRole | null = viewModeOverride ?? (profile?.role ?? null);
+
   return React.createElement(AuthContext.Provider, {
     value: {
       session,
       user,
       profile,
       loading,
+      viewMode,
+      setViewMode,
       signOut,
       signInWithGoogle,
       refreshProfile,

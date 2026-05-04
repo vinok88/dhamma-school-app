@@ -25,7 +25,7 @@ Notifications.setNotificationHandler({
 });
 
 function RootLayoutNav() {
-  const { session, profile, loading } = useAuth();
+  const { session, profile, loading, viewMode } = useAuth();
   const router = useRouter();
   const segments = useSegments();
 
@@ -120,7 +120,9 @@ function RootLayoutNav() {
     } else if (!profile) {
       router.replace('/(auth)/complete-profile');
     } else {
-      const role = profile.role;
+      // Route by the effective view-mode (may be overridden via Switch Profile),
+      // not the DB role. RLS still uses profile.role.
+      const role = viewMode ?? profile.role;
       const expectedSegment =
         role === 'parent' ? '(parent)'
         : role === 'teacher' ? '(teacher)'
@@ -135,7 +137,7 @@ function RootLayoutNav() {
         else router.replace('/(admin)'); // admin + principal
       }
     }
-  }, [session, profile, loading]);
+  }, [session, profile, loading, viewMode]);
 
   if (loading) return <LoadingSpinner fullScreen label="Loading…" />;
 

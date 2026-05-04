@@ -78,26 +78,36 @@ export default function StudentStatusScreen() {
             <Row label="Date of Birth" value={formatDate(student.dob)} />
             <Row label="Gender" value={student.gender} />
             <Row label="Class" value={student.className ?? 'Not assigned'} />
-            {student.classTeacherName && (
-              <Row label="Teacher" value={student.classTeacherName} />
+            {student.classTeachers.length > 0 && (
+              <Row
+                label={student.classTeachers.length > 1 ? 'Teachers' : 'Teacher'}
+                value={student.classTeachers.map((t) => t.name).filter(Boolean).join(', ')}
+              />
             )}
             {student.hasAllergies && (
               <Row label="Allergies" value={student.allergyNotes ?? 'Yes (no notes)'} highlight />
             )}
           </View>
 
-          {student.classTeacherId ? (
-            <TouchableOpacity
-              onPress={() => router.push({
-                pathname: `/messages/${student.classTeacherId}`,
-                params: { name: student.classTeacherName ?? 'Teacher' },
-              } as never)}
-              className="self-start mt-3 rounded-full px-3 py-1.5"
-              style={{ backgroundColor: COLORS.primary }}
-              activeOpacity={0.85}
-            >
-              <Text className="text-white text-xs font-sans-semibold">💬 Message Teacher</Text>
-            </TouchableOpacity>
+          {student.classTeachers.length > 0 ? (
+            <View className="flex-row flex-wrap gap-2 mt-3">
+              {student.classTeachers.map((t) => (
+                <TouchableOpacity
+                  key={t.id}
+                  onPress={() => router.push({
+                    pathname: `/messages/${t.id}`,
+                    params: { name: t.name || 'Teacher' },
+                  } as never)}
+                  className="rounded-full px-3 py-1.5"
+                  style={{ backgroundColor: COLORS.primary }}
+                  activeOpacity={0.85}
+                >
+                  <Text className="text-white text-xs font-sans-semibold">
+                    💬 Message {t.name || 'Teacher'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           ) : null}
         </Card>
 

@@ -300,16 +300,15 @@ serve(async (req: Request) => {
         parentIds = Array.from(new Set(ids))
       }
 
-      const { data: classData, error: classError } = await supabase
-        .from('classes')
+      const { data: ctRows, error: ctError } = await supabase
+        .from('class_teachers')
         .select('teacher_id')
-        .eq('id', announcement.target_class_id)
-        .single()
+        .eq('class_id', announcement.target_class_id)
 
-      if (classError) throw classError
+      if (ctError) throw ctError
 
-      const teacherId = classData?.teacher_id
-      const allUserIds = [...parentIds, ...(teacherId ? [teacherId] : [])]
+      const teacherIds = (ctRows ?? []).map((r: any) => r.teacher_id as string)
+      const allUserIds = Array.from(new Set([...parentIds, ...teacherIds]))
       targetUserIds = allUserIds
 
       if (allUserIds.length > 0) {

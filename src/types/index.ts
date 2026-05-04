@@ -47,8 +47,7 @@ export interface StudentModel {
   address?: string;
   classId?: string;
   className?: string;
-  classTeacherId?: string;
-  classTeacherName?: string;
+  classTeachers: { id: string; name: string }[];
   status: StudentStatus;
   statusNote?: string;
   parents: StudentParentLink[];
@@ -81,8 +80,7 @@ export interface ClassModel {
   schoolId: string;
   name: string;
   gradeLevel: string;
-  teacherId?: string;
-  teacherName?: string;
+  teachers: { id: string; name: string }[];
   studentCount: number;
   createdAt: string;
 }
@@ -210,5 +208,5 @@ export interface EventFormData {
 export interface ClassFormData {
   name: string;
   gradeLevel: string;
-  teacherId?: string;
+  teacherIds: string[];
 }

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
+import { SwitchProfile } from '@/components/ui/SwitchProfile';
 import { COLORS } from '@/constants';
 
 const SHARED_ITEMS = [
@@ -40,6 +41,8 @@ export default function MoreScreen() {
       </View>
 
       <ScrollView className="flex-1 px-4 pt-4">
+        <SwitchProfile />
+
         {menuItems.map((item) => (
           <TouchableOpacity
             key={item.label}

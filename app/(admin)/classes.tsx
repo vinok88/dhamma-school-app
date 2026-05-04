@@ -29,21 +29,21 @@ export default function ClassesScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<ClassFormData>({
-    defaultValues: { name: '', gradeLevel: '' },
+    defaultValues: { name: '', gradeLevel: '', teacherIds: [] },
   });
 
   function openCreate() {
     setEditingId(null);
-    reset({ name: '', gradeLevel: '' });
+    reset({ name: '', gradeLevel: '', teacherIds: [] });
     setModalVisible(true);
   }
 
   async function onSubmit(data: ClassFormData) {
     try {
       if (editingId) {
-        await updateClass.mutateAsync({ classId: editingId, name: data.name, gradeLevel: data.gradeLevel, teacherId: data.teacherId });
+        await updateClass.mutateAsync({ classId: editingId, name: data.name, gradeLevel: data.gradeLevel, teacherIds: data.teacherIds });
       } else {
-        await createClass.mutateAsync({ schoolId, name: data.name, gradeLevel: data.gradeLevel, teacherId: data.teacherId });
+        await createClass.mutateAsync({ schoolId, name: data.name, gradeLevel: data.gradeLevel, teacherIds: data.teacherIds });
       }
       setModalVisible(false);
       reset();
@@ -91,7 +91,11 @@ export default function ClassesScreen() {
                   <TouchableOpacity
                     onPress={() => {
                       setEditingId(c.id);
-                      reset({ name: c.name, gradeLevel: c.gradeLevel, teacherId: c.teacherId });
+                      reset({
+                        name: c.name,
+                        gradeLevel: c.gradeLevel,
+                        teacherIds: c.teachers.map((t) => t.id),
+                      });
                       setModalVisible(true);
                     }}
                     className="bg-gray-100 rounded-lg px-3 py-1.5"
@@ -106,9 +110,13 @@ export default function ClassesScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-              <View className="flex-row gap-4 mt-1">
+              <View className="flex-row gap-4 mt-1 flex-wrap">
                 <Text className="text-xs text-text-muted">👥 {c.studentCount} students</Text>
-                <Text className="text-xs text-text-muted">👩‍🏫 {c.teacherName ?? 'No teacher'}</Text>
+                <Text className="text-xs text-text-muted">
+                  👩‍🏫 {c.teachers.length === 0
+                    ? 'No teacher'
+                    : c.teachers.map((t) => t.name).join(', ')}
+                </Text>
               </View>
             </Card>
           )}
@@ -131,29 +139,34 @@ export default function ClassesScreen() {
                 placeholder="e.g. Ages 4–6" error={errors.gradeLevel?.message} />
             )} />
 
-            {/* Teacher assignment */}
-            <Text className="text-sm font-sans-semibold text-text-primary mb-2">Assign Teacher</Text>
-            <Controller control={control} name="teacherId" render={({ field }) => (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
-                <View className="flex-row gap-2">
-                  <TouchableOpacity
-                    onPress={() => field.onChange(undefined)}
-                    className={`px-3 py-1.5 rounded-full border ${!field.value ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
-                  >
-                    <Text className={`text-xs font-sans-semibold ${!field.value ? 'text-white' : 'text-text-muted'}`}>None</Text>
-                  </TouchableOpacity>
-                  {(teachers ?? []).filter((t) => t.status === 'active').map((t) => (
-                    <TouchableOpacity
-                      key={t.id}
-                      onPress={() => field.onChange(t.id)}
-                      className={`px-3 py-1.5 rounded-full border ${field.value === t.id ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
-                    >
-                      <Text className={`text-xs font-sans-semibold ${field.value === t.id ? 'text-white' : 'text-text-muted'}`}>{t.fullName}</Text>
-                    </TouchableOpacity>
-                  ))}
+            {/* Teacher assignment — multi-select */}
+            <Text className="text-sm font-sans-semibold text-text-primary mb-1">Assign Teachers</Text>
+            <Text className="text-xs text-text-muted mb-2">Tap to toggle. A class can have multiple teachers.</Text>
+            <Controller control={control} name="teacherIds" render={({ field }) => {
+              const value = field.value ?? [];
+              const toggle = (id: string) => {
+                if (value.includes(id)) field.onChange(value.filter((v) => v !== id));
+                else field.onChange([...value, id]);
+              };
+              return (
+                <View className="flex-row flex-wrap gap-2 mb-4">
+                  {(teachers ?? []).filter((t) => t.status === 'active').map((t) => {
+                    const active = value.includes(t.id);
+                    return (
+                      <TouchableOpacity
+                        key={t.id}
+                        onPress={() => toggle(t.id)}
+                        className={`px-3 py-1.5 rounded-full border ${active ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
+                      >
+                        <Text className={`text-xs font-sans-semibold ${active ? 'text-white' : 'text-text-muted'}`}>
+                          {active ? '✓ ' : ''}{t.fullName}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
-              </ScrollView>
-            )} />
+              );
+            }} />
 
             <View className="flex-row gap-3">
               <View className="flex-1"><Button label="Cancel" variant="outline" onPress={() => setModalVisible(false)} fullWidth /></View>

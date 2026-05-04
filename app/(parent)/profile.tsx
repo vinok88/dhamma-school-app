@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/Button';
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 import { ProfileFormData } from '@/types';
 import { showFriendlyError } from '@/utils/errors';
+import { SwitchProfile } from '@/components/ui/SwitchProfile';
 
 export default function ParentProfile() {
   const { profile, signOut, refreshProfile } = useAuth();
@@ -119,6 +120,8 @@ export default function ParentProfile() {
               </View>
             )}
           </Card>
+
+          <SwitchProfile />
 
           <Button
             label="Sign Out"

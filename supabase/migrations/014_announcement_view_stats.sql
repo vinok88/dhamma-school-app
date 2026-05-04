@@ -52,7 +52,10 @@ BEGIN
            WHERE s.class_id = v_announcement.target_class_id
              AND sp.parent_user_id IS NOT NULL
         )
-        OR up.id IN (SELECT c.teacher_id FROM classes c WHERE c.id = v_announcement.target_class_id)
+        OR up.id IN (
+          SELECT ct.teacher_id FROM class_teachers ct
+          WHERE ct.class_id = v_announcement.target_class_id
+        )
       );
   END IF;
 END;

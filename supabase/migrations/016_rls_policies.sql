@@ -12,6 +12,7 @@
 ALTER TABLE schools              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_profiles        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE classes              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE class_teachers       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE students             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE student_parents      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE teacher_invitations  ENABLE ROW LEVEL SECURITY;
@@ -69,6 +70,20 @@ CREATE POLICY "Classes: admin all"
   WITH CHECK (is_admin_or_principal());
 
 -- ============================================================
+-- CLASS_TEACHERS — read for non-guests; admin manages.
+-- ============================================================
+CREATE POLICY "ClassTeachers: authenticated read"
+  ON class_teachers FOR SELECT
+  TO authenticated
+  USING (NOT is_guest());
+
+CREATE POLICY "ClassTeachers: admin all"
+  ON class_teachers FOR ALL
+  TO authenticated
+  USING (is_admin_or_principal())
+  WITH CHECK (is_admin_or_principal());
+
+-- ============================================================
 -- STUDENTS
 -- ============================================================
 CREATE POLICY "Students: parent sees linked"
@@ -107,7 +122,7 @@ CREATE POLICY "Students: teacher sees class"
   TO authenticated
   USING (
     get_my_role() = 'teacher'
-    AND class_id IN (SELECT id FROM classes WHERE teacher_id = auth.uid())
+    AND class_id IN (SELECT class_id FROM class_teachers WHERE teacher_id = auth.uid())
   );
 
 CREATE POLICY "Students: admin all"
@@ -126,7 +141,7 @@ CREATE OR REPLACE FUNCTION my_class_student_ids()
 RETURNS SETOF UUID
 LANGUAGE sql SECURITY DEFINER STABLE AS $$
   SELECT s.id FROM students s
-  WHERE s.class_id IN (SELECT id FROM classes WHERE teacher_id = auth.uid());
+  WHERE s.class_id IN (SELECT class_id FROM class_teachers WHERE teacher_id = auth.uid());
 $$;
 
 CREATE POLICY "StudentParents: admin all"
@@ -163,7 +178,7 @@ CREATE POLICY "Attendance: teacher insert"
   WITH CHECK (
     teacher_id = auth.uid()
     AND get_my_role() = 'teacher'
-    AND class_id IN (SELECT id FROM classes WHERE teacher_id = auth.uid())
+    AND class_id IN (SELECT class_id FROM class_teachers WHERE teacher_id = auth.uid())
   );
 
 CREATE POLICY "Attendance: teacher update"
@@ -189,7 +204,7 @@ CREATE POLICY "Attendance: teacher read class"
   TO authenticated
   USING (
     get_my_role() = 'teacher'
-    AND class_id IN (SELECT id FROM classes WHERE teacher_id = auth.uid())
+    AND class_id IN (SELECT class_id FROM class_teachers WHERE teacher_id = auth.uid())
   );
 
 CREATE POLICY "Attendance: parent read own child"
@@ -223,7 +238,7 @@ CREATE POLICY "Announcements: authenticated read"
         AND (
           is_admin_or_principal()
           OR author_id = auth.uid()
-          OR target_class_id IN (SELECT id FROM classes WHERE teacher_id = auth.uid())
+          OR target_class_id IN (SELECT class_id FROM class_teachers WHERE teacher_id = auth.uid())
           OR target_class_id IN (
             SELECT s.class_id FROM students s
             JOIN student_parents sp ON sp.student_id = s.id
@@ -241,7 +256,7 @@ CREATE POLICY "Announcements: teacher insert class"
     get_my_role() = 'teacher'
     AND type = 'class'
     AND author_id = auth.uid()
-    AND target_class_id IN (SELECT id FROM classes WHERE teacher_id = auth.uid())
+    AND target_class_id IN (SELECT class_id FROM class_teachers WHERE teacher_id = auth.uid())
   );
 
 CREATE POLICY "Announcements: admin all"

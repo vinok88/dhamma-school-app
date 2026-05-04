@@ -32,7 +32,13 @@ describe('ClassesScreen', () => {
 
   it('lists classes when present', () => {
     (useClasses as jest.Mock).mockReturnValue(
-      queryOk([{ id: 'c1', name: 'Year 2', gradeLevel: 'Y2', teacherId: 't1', teacherName: 'Tara Teacher', studentCount: 10 }]),
+      queryOk([{
+        id: 'c1',
+        name: 'Year 2',
+        gradeLevel: 'Y2',
+        teachers: [{ id: 't1', name: 'Tara Teacher' }],
+        studentCount: 10,
+      }]),
     );
     renderScreen(<ClassesScreen />);
     expect(screen.getByText('Year 2')).toBeTruthy();

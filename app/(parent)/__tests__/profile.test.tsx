@@ -9,6 +9,8 @@ const mockSignOut = jest.fn(async () => undefined);
 jest.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({
     profile: require('@/test-utils/fixtures').parentProfile,
+    viewMode: 'parent',
+    setViewMode: jest.fn(),
     signOut: mockSignOut,
   }),
 }));
@@ -17,6 +19,12 @@ jest.mock('@/hooks/useProfile', () => ({
   useUpdateProfile: () => require('@/test-utils/fixtures').mutationStub(),
   useUploadProfilePhoto: () => require('@/test-utils/fixtures').mutationStub(),
   useProfilePhotoUrl: () => ({ data: undefined }),
+}));
+
+// SwitchProfile pulls in useStudents → @/lib/supabase. Stub it so tests don't
+// need real env vars; for parents the component renders nothing anyway.
+jest.mock('@/hooks/useStudents', () => ({
+  useMyStudents: () => ({ data: [] }),
 }));
 
 import ParentProfile from '../profile';

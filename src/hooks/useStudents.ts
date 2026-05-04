@@ -20,7 +20,14 @@ function mapParentLinks(rows: unknown): StudentParentLink[] {
 
 function mapStudent(d: Record<string, unknown>): StudentModel {
   const klass = d.classes as Record<string, unknown> | null;
-  const teacherProfile = klass?.user_profiles as Record<string, unknown> | null;
+  const ctRows = (klass?.class_teachers as Record<string, unknown>[] | undefined) ?? [];
+  const classTeachers = ctRows.map((row) => {
+    const profile = row.user_profiles as Record<string, unknown> | null;
+    return {
+      id: row.teacher_id as string,
+      name: (profile?.full_name as string) ?? '',
+    };
+  });
   return {
     id: d.id as string,
     schoolId: d.school_id as string,
@@ -36,8 +43,7 @@ function mapStudent(d: Record<string, unknown>): StudentModel {
     address: d.address as string | undefined,
     classId: d.class_id as string | undefined,
     className: klass?.name as string | undefined,
-    classTeacherId: klass?.teacher_id as string | undefined,
-    classTeacherName: teacherProfile?.full_name as string | undefined,
+    classTeachers,
     status: d.status as StudentStatus,
     statusNote: d.status_note as string | undefined,
     parents: mapParentLinks(d.student_parents),
@@ -61,7 +67,7 @@ export function useMyStudents(userId: string) {
 
       const { data, error } = await supabase
         .from(TABLES.STUDENTS)
-        .select('*, classes(name, teacher_id, user_profiles!teacher_id(full_name)), student_parents(*)')
+        .select('*, classes(name, class_teachers(teacher_id, user_profiles(full_name))), student_parents(*)')
         .in('id', ids)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -95,7 +101,7 @@ export function useAllStudents(schoolId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from(TABLES.STUDENTS)
-        .select('*, classes(name, teacher_id, user_profiles!teacher_id(full_name)), student_parents(*)')
+        .select('*, classes(name, class_teachers(teacher_id, user_profiles(full_name))), student_parents(*)')
         .eq('school_id', schoolId)
         .order('first_name');
       if (error) throw error;
@@ -111,7 +117,7 @@ export function useStudentDetail(studentId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from(TABLES.STUDENTS)
-        .select('*, classes(name, teacher_id, user_profiles!teacher_id(full_name)), student_parents(*)')
+        .select('*, classes(name, class_teachers(teacher_id, user_profiles(full_name))), student_parents(*)')
         .eq('id', studentId)
         .single();
       if (error) throw error;
