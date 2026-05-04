@@ -80,7 +80,7 @@ export const ANNOUNCEMENT_TYPE_CONFIG: Record<
   school: { label: 'School', color: '#052254' },
   class: { label: 'Class', color: '#3B82F6' },
   emergency: { label: 'Emergency', color: '#C0392B' },
-  event_reminder: { label: 'Event', color: '#F7B656' },
+  event_reminder: { label: 'Reminder', color: '#F7B656' },
 };
 
 // Attendance status config
