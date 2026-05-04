@@ -14,6 +14,7 @@ jest.mock('@/hooks/useClasses', () => ({
 }));
 
 jest.mock('@/hooks/useAnnouncements', () => ({
+  useAnnouncements: () => require('@/test-utils/fixtures').queryOk([]),
   useCreateAnnouncement: () => require('@/test-utils/fixtures').mutationStub(),
 }));
 

@@ -7,10 +7,11 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyClasses } from '@/hooks/useClasses';
-import { useCreateAnnouncement } from '@/hooks/useAnnouncements';
+import { useAnnouncements, useCreateAnnouncement } from '@/hooks/useAnnouncements';
 import { ClassPicker } from '@/components/ui/ClassPicker';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { AnnouncementCard } from '@/components/AnnouncementCard';
 import { announcementSchema } from '@/utils/schemas';
 import { AnnouncementFormData } from '@/types';
 import { showFriendlyError } from '@/utils/errors';
@@ -32,6 +33,10 @@ export default function SendAnnouncementScreen() {
     [classes, selectedClassId]
   );
   const createAnnouncement = useCreateAnnouncement();
+
+  // Recent announcements visible to this teacher (RLS scopes to school-wide
+  // + the teacher's classes via class_teachers).
+  const { data: recentAnnouncements } = useAnnouncements(profile?.schoolId ?? '');
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<AnnouncementFormData>({
     resolver: zodResolver(announcementSchema),
@@ -109,6 +114,17 @@ export default function SendAnnouncementScreen() {
 
           <Button label="Publish Announcement" onPress={handleSubmit(onSubmit)}
             loading={createAnnouncement.isPending} fullWidth />
+
+          <Text className="text-xs tracking-widest uppercase mt-8 mb-3" style={{ color: '#8B7D6B' }}>
+            Recent Announcements
+          </Text>
+          {!recentAnnouncements?.length ? (
+            <Text className="text-sm text-text-muted mb-4">No announcements yet.</Text>
+          ) : (
+            recentAnnouncements.slice(0, 10).map((a) => (
+              <AnnouncementCard key={a.id} announcement={a} />
+            ))
+          )}
           <View className="h-8" />
         </ScrollView>
       </KeyboardAvoidingView>

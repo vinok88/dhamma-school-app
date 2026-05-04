@@ -7,10 +7,11 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/hooks/useAuth';
 import { useClasses } from '@/hooks/useClasses';
-import { useCreateAnnouncement } from '@/hooks/useAnnouncements';
+import { useAnnouncements, useCreateAnnouncement } from '@/hooks/useAnnouncements';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { AnnouncementCard } from '@/components/AnnouncementCard';
 import { announcementSchema } from '@/utils/schemas';
 import { AnnouncementFormData, AnnouncementType } from '@/types';
 import { ANNOUNCEMENT_TYPE_CONFIG } from '@/constants';
@@ -21,6 +22,7 @@ const ALL_TYPES: AnnouncementType[] = ['school', 'class', 'emergency', 'event_re
 export default function AdminAnnounceScreen() {
   const { profile } = useAuth();
   const { data: classes } = useClasses(profile?.schoolId ?? '');
+  const { data: announcements } = useAnnouncements(profile?.schoolId ?? '');
   const createAnnouncement = useCreateAnnouncement();
 
   const { control, handleSubmit, reset, watch, formState: { errors } } = useForm<AnnouncementFormData>({
@@ -117,6 +119,18 @@ export default function AdminAnnounceScreen() {
 
           <Button label="Publish Announcement" onPress={handleSubmit(onSubmit)}
             loading={createAnnouncement.isPending} fullWidth size="lg" />
+
+          {/* Recent announcements — same look as the dashboard list */}
+          <Text className="text-xs tracking-widest uppercase mt-8 mb-3" style={{ color: '#8B7D6B' }}>
+            Recent Announcements
+          </Text>
+          {!announcements?.length ? (
+            <Text className="text-sm text-text-muted mb-4">No announcements yet.</Text>
+          ) : (
+            announcements.slice(0, 10).map((a) => (
+              <AnnouncementCard key={a.id} announcement={a} />
+            ))
+          )}
           <View className="h-8" />
         </ScrollView>
       </KeyboardAvoidingView>
