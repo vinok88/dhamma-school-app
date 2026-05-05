@@ -16,7 +16,11 @@ jest.mock('@/hooks/useClasses', () => ({
 
 jest.mock('@/hooks/useTeachers', () => ({
   useTeachers: () => require('@/test-utils/fixtures').queryOk([
-    { id: 't1', fullName: 'Tara Teacher', status: 'active' },
+    { id: 't1', fullName: 'Tara Teacher', status: 'active', role: 'teacher' },
+  ]),
+  useAssignableTeachers: () => require('@/test-utils/fixtures').queryOk([
+    { id: 't1', fullName: 'Tara Teacher', status: 'active', role: 'teacher' },
+    { id: 'p1', fullName: 'Penny Principal', status: 'active', role: 'principal' },
   ]),
 }));
 

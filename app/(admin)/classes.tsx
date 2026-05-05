@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
 import { useAuth } from '@/hooks/useAuth';
 import { useClasses, useCreateClass, useUpdateClass, useDeleteClass } from '@/hooks/useClasses';
-import { useTeachers } from '@/hooks/useTeachers';
+import { useAssignableTeachers } from '@/hooks/useTeachers';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -20,7 +20,7 @@ export default function ClassesScreen() {
   const { profile } = useAuth();
   const schoolId = profile?.schoolId ?? '';
   const { data: classes, isLoading } = useClasses(schoolId);
-  const { data: teachers } = useTeachers(schoolId);
+  const { data: teachers } = useAssignableTeachers(schoolId);
   const createClass = useCreateClass();
   const updateClass = useUpdateClass();
   const deleteClass = useDeleteClass();
@@ -152,6 +152,7 @@ export default function ClassesScreen() {
                 <View className="flex-row flex-wrap gap-2 mb-4">
                   {(teachers ?? []).filter((t) => t.status === 'active').map((t) => {
                     const active = value.includes(t.id);
+                    const suffix = t.role === 'principal' ? ' (Principal)' : '';
                     return (
                       <TouchableOpacity
                         key={t.id}
@@ -159,7 +160,7 @@ export default function ClassesScreen() {
                         className={`px-3 py-1.5 rounded-full border ${active ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
                       >
                         <Text className={`text-xs font-sans-semibold ${active ? 'text-white' : 'text-text-muted'}`}>
-                          {active ? '✓ ' : ''}{t.fullName}
+                          {active ? '✓ ' : ''}{t.fullName}{suffix}
                         </Text>
                       </TouchableOpacity>
                     );

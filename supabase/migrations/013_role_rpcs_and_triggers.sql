@@ -127,12 +127,14 @@ BEGIN
     UPDATE user_profiles SET role = 'parent', updated_at = NOW() WHERE id = v_uid;
     NEW.parent_user_id := v_uid;
   ELSE
-    -- Fall back: still link if a non-admin user exists with that email
+    -- Fall back: link any existing user with that email (teachers, admins,
+    -- principals). We never *demote* their primary role here — the link
+    -- table simply records that they are also a parent, and they can use
+    -- Switch Profile to view as one at runtime.
     SELECT up.id INTO v_uid
       FROM user_profiles up
       JOIN auth.users au ON au.id = up.id
-     WHERE lower(au.email) = lower(NEW.parent_email)
-       AND up.role NOT IN ('admin', 'principal');
+     WHERE lower(au.email) = lower(NEW.parent_email);
     IF v_uid IS NOT NULL THEN
       NEW.parent_user_id := v_uid;
     END IF;
@@ -153,17 +155,23 @@ CREATE OR REPLACE FUNCTION upgrade_guest_on_teacher_invitation_insert()
 RETURNS TRIGGER
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
-  v_uid UUID;
+  v_uid  UUID;
+  v_role user_role;
 BEGIN
-  SELECT up.id INTO v_uid
+  -- Find any existing user with this email; capture their current role too.
+  SELECT up.id, up.role INTO v_uid, v_role
     FROM user_profiles up
     JOIN auth.users au ON au.id = up.id
-   WHERE lower(au.email) = lower(NEW.email)
-     AND up.role NOT IN ('admin', 'principal');
+   WHERE lower(au.email) = lower(NEW.email);
 
   IF v_uid IS NOT NULL THEN
-    UPDATE user_profiles SET role = 'teacher', updated_at = NOW() WHERE id = v_uid;
+    -- Always claim the invitation so admin tooling reflects the link.
     NEW.claimed_by := v_uid;
+    -- Only upgrade to teacher if the user isn't already an admin/principal —
+    -- we never demote a higher-privilege role.
+    IF v_role NOT IN ('admin', 'principal') THEN
+      UPDATE user_profiles SET role = 'teacher', updated_at = NOW() WHERE id = v_uid;
+    END IF;
   END IF;
 
   RETURN NEW;

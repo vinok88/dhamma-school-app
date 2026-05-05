@@ -9,9 +9,10 @@ import { useTodayAttendance } from '@/hooks/useAttendance';
 import { AnnouncementCard } from '@/components/AnnouncementCard';
 import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { toIsoDate, lastSunday } from '@/utils/date';
+import { lastSunday } from '@/utils/date';
 import { COLORS } from '@/constants';
 import { userGreetingName } from '@/utils/display';
+import type { ClassModel } from '@/types';
 
 export default function TeacherHome() {
   const router = useRouter();
@@ -19,11 +20,7 @@ export default function TeacherHome() {
   const isPending = profile?.status !== 'active';
   const { data: classes, isLoading: classLoading } = useMyClasses(profile?.id ?? '');
   const primaryClass = classes?.[0] ?? null;
-  const { data: attendance } = useTodayAttendance(primaryClass?.id ?? '', lastSunday());
   const { data: announcements } = useAnnouncements(profile?.schoolId ?? '', primaryClass?.id);
-
-  const presentCount = attendance?.filter((a) => a.status !== 'absent').length ?? 0;
-  const totalCount = attendance?.length ?? 0;
 
   const displayName = userGreetingName(profile, 'Teacher');
 
@@ -92,30 +89,8 @@ export default function TeacherHome() {
                 Your Classes ({classes.length})
               </Text>
             ) : null}
-            {classes.map((c, idx) => (
-              <Card key={c.id} className="mb-3" style={{ backgroundColor: COLORS.primary }}>
-                <Text className="text-xs mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>Class</Text>
-                <Text className="text-white text-xl font-sans-semibold">{c.name}</Text>
-                <Text className="text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>{c.gradeLevel}</Text>
-                <View className="flex-row mt-4 gap-4">
-                  <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
-                    <Text className="text-white text-xl font-sans-semibold">{c.studentCount}</Text>
-                    <Text className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>Students</Text>
-                  </View>
-                  {idx === 0 ? (
-                    <>
-                      <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(76,175,135,0.35)' }}>
-                        <Text className="text-white text-xl font-sans-semibold">{presentCount}</Text>
-                        <Text className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>Present</Text>
-                      </View>
-                      <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(192,57,43,0.35)' }}>
-                        <Text className="text-white text-xl font-sans-semibold">{totalCount - presentCount}</Text>
-                        <Text className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>Absent</Text>
-                      </View>
-                    </>
-                  ) : null}
-                </View>
-              </Card>
+            {classes.map((c) => (
+              <TeacherClassCard key={c.id} klass={c} />
             ))}
           </>
         )}
@@ -148,5 +123,33 @@ export default function TeacherHome() {
         <View className="h-8" />
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function TeacherClassCard({ klass }: { klass: ClassModel }) {
+  const { data: attendance } = useTodayAttendance(klass.id, lastSunday());
+  const presentCount = attendance?.filter((a) => a.status !== 'absent').length ?? 0;
+  const totalCount = attendance?.length ?? 0;
+
+  return (
+    <Card className="mb-3" style={{ backgroundColor: COLORS.primary }}>
+      <Text className="text-xs mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>Class</Text>
+      <Text className="text-white text-xl font-sans-semibold">{klass.name}</Text>
+      <Text className="text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>{klass.gradeLevel}</Text>
+      <View className="flex-row mt-4 gap-4">
+        <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+          <Text className="text-white text-xl font-sans-semibold">{klass.studentCount}</Text>
+          <Text className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>Students</Text>
+        </View>
+        <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(76,175,135,0.35)' }}>
+          <Text className="text-white text-xl font-sans-semibold">{presentCount}</Text>
+          <Text className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>Present</Text>
+        </View>
+        <View className="flex-1 items-center py-2 rounded-xl" style={{ backgroundColor: 'rgba(192,57,43,0.35)' }}>
+          <Text className="text-white text-xl font-sans-semibold">{Math.max(0, totalCount - presentCount)}</Text>
+          <Text className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>Absent</Text>
+        </View>
+      </View>
+    </Card>
   );
 }

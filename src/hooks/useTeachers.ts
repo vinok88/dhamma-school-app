@@ -11,7 +11,7 @@ function mapTeacher(d: Record<string, unknown>): UserModel {
     preferredName: d.preferred_name as string | undefined,
     phone: d.phone as string | undefined,
     address: d.address as string | undefined,
-    role: 'teacher',
+    role: (d.role as UserModel['role']) ?? 'teacher',
     status: d.status as UserModel['status'],
     profilePhotoUrl: d.profile_photo_url as string | undefined,
     fcmToken: d.fcm_token as string | undefined,
@@ -29,6 +29,27 @@ export function useTeachers(schoolId: string) {
         .select('*')
         .eq('school_id', schoolId)
         .eq('role', 'teacher')
+        .order('full_name');
+      if (error) throw error;
+      return (data ?? []).map(mapTeacher);
+    },
+    enabled: !!schoolId,
+  });
+}
+
+/**
+ * People eligible to teach a class — teachers and principals.
+ * Used by the class-assignment UI so a principal can also be picked.
+ */
+export function useAssignableTeachers(schoolId: string) {
+  return useQuery({
+    queryKey: ['teachers', 'assignable', schoolId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from(TABLES.USER_PROFILES)
+        .select('*')
+        .eq('school_id', schoolId)
+        .in('role', ['teacher', 'principal'])
         .order('full_name');
       if (error) throw error;
       return (data ?? []).map(mapTeacher);
