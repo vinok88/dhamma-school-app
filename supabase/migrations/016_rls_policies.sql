@@ -55,6 +55,18 @@ CREATE POLICY "Profiles: teacher read parent profiles"
   TO authenticated
   USING (get_my_role() = 'teacher' AND role = 'parent');
 
+-- Parents need to see staff names so message threads / sender labels render
+-- the actual name instead of "Unknown". This grants read of profile rows for
+-- teacher / admin / principal users; sensitive fields (fcm_token, etc.) are
+-- protected at the application layer (we only ever select full_name + photo).
+CREATE POLICY "Profiles: parent read staff profiles"
+  ON user_profiles FOR SELECT
+  TO authenticated
+  USING (
+    get_my_role() = 'parent'
+    AND role IN ('teacher', 'admin', 'principal')
+  );
+
 -- ============================================================
 -- CLASSES
 -- ============================================================

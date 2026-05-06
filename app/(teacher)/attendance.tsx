@@ -24,7 +24,7 @@ import { showFriendlyError } from '@/utils/errors';
 import { studentDisplayName } from '@/utils/display';
 
 function AttendanceRow({
-  student, record, onCheckIn, onCheckOut, onAbsent, onUndoCheckIn, onUndoCheckOut,
+  student, record, onCheckIn, onCheckOut, onAbsent, onUndoCheckIn, onUndoCheckOut, onClearAbsent,
 }: {
   student: any;
   record: AttendanceModel | undefined;
@@ -33,6 +33,7 @@ function AttendanceRow({
   onAbsent: () => void;
   onUndoCheckIn: (id: string) => void;
   onUndoCheckOut: (id: string) => void;
+  onClearAbsent: (id: string) => void;
 }) {
   const { data: signedPhotoUrl } = useStudentPhotoUrl(student.photoUrl);
   const status = record?.status;
@@ -107,7 +108,7 @@ function AttendanceRow({
         )}
         {status === 'absent' && (
           <TouchableOpacity
-            onPress={() => onUndoCheckIn(record!.id)}
+            onPress={() => onClearAbsent(record!.id)}
             className="rounded-xl px-3 py-2 border border-gray-200 bg-white"
             activeOpacity={0.8}
           >
@@ -225,6 +226,30 @@ export default function AttendanceScreen() {
     );
   }
 
+  // Same delete operation as Undo Check-In, but the user-facing copy talks
+  // about clearing the Absent mark instead of the check-in.
+  function handleClearAbsent(attendanceId: string) {
+    if (!myClass) return;
+    Alert.alert(
+      'Clear Absent',
+      'Remove the absent mark for this student? You can record again afterwards.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await undoCheckIn.mutateAsync({ attendanceId, classId: myClass.id });
+            } catch (e: unknown) {
+              showFriendlyError("Couldn't clear", e, 'attendance-clear-absent');
+            }
+          },
+        },
+      ]
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">
       {/* Header */}
@@ -278,6 +303,7 @@ export default function AttendanceScreen() {
               onAbsent={() => handleAbsent(student.id)}
               onUndoCheckIn={(id) => handleUndoCheckIn(id)}
               onUndoCheckOut={(id) => handleUndoCheckOut(id)}
+              onClearAbsent={(id) => handleClearAbsent(id)}
             />
           )}
         />
