@@ -48,7 +48,7 @@ export default function GuestWelcomeScreen() {
           })()}
         </Text>
         <Text className="text-center text-sm mb-6" style={{ color: COLORS.textMuted }}>
-          This app is for enrolled families and staff of the Mahamevnawa Dhamma School.
+          This app is for enrolled families and staff of the Mahamevnawa Sunday School.
         </Text>
 
         <View className="bg-white rounded-2xl p-5 w-full mb-4">

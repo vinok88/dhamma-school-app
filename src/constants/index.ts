@@ -1,5 +1,5 @@
-export const APP_NAME = 'Dhamma School';
-export const APP_FULL_NAME = 'Mahamevnawa Dhamma School – Melbourne';
+export const APP_NAME = 'Sunday School';
+export const APP_FULL_NAME = 'Mahamevnawa Sunday School – Melbourne';
 export const APP_ORGANISATION = 'Mahamevnawa Buddhist Monastery';
 
 // Supabase table names

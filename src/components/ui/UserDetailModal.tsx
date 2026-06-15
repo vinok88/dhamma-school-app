@@ -1,10 +1,17 @@
-import React from 'react';
-import { View, Text, Modal, TouchableOpacity, Linking, ScrollView } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  View, Text, Modal, TouchableOpacity, Linking, ScrollView,
+  TextInput, Switch, Alert,
+} from 'react-native';
 import { Avatar } from './Avatar';
 import { Badge } from './Badge';
 import { COLORS } from '@/constants';
-import { UserModel, StudentModel } from '@/types';
+import { UserModel, StudentModel, StudentStatus } from '@/types';
 import { formatDate, formatAge } from '@/utils/date';
+import { useAuth } from '@/hooks/useAuth';
+import { useClasses } from '@/hooks/useClasses';
+import { useAdminUpdateStudent } from '@/hooks/useStudents';
+import { showFriendlyError } from '@/utils/errors';
 
 interface UserDetailModalProps {
   visible: boolean;
@@ -13,6 +20,8 @@ interface UserDetailModalProps {
   student?: StudentModel | null;
   /** Signed photo URL for student (since student.photoUrl needs signing) */
   studentPhotoUrl?: string | null;
+  /** When true and a student is shown, an admin/principal can edit any field. */
+  editable?: boolean;
 }
 
 const ROLE_STYLES: Record<string, { color: string; bg: string }> = {
@@ -41,8 +50,77 @@ function DetailRow({ label, value, onPress }: { label: string; value?: string | 
   );
 }
 
-export function UserDetailModal({ visible, onClose, user, student, studentPhotoUrl }: UserDetailModalProps) {
+function EditRow({
+  label, value, onChangeText, placeholder, keyboardType, autoCapitalize,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (v: string) => void;
+  placeholder?: string;
+  keyboardType?: 'default' | 'email-address' | 'phone-pad';
+  autoCapitalize?: 'none' | 'sentences' | 'words';
+}) {
+  return (
+    <View className="py-2 border-b border-gray-100">
+      <Text className="text-xs text-text-muted mb-1">{label}</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        keyboardType={keyboardType ?? 'default'}
+        autoCapitalize={autoCapitalize ?? 'sentences'}
+        className="text-sm text-text-primary bg-gray-50 rounded-lg px-3 py-2"
+      />
+    </View>
+  );
+}
+
+type StudentDraft = {
+  firstName: string;
+  lastName: string;
+  preferredName: string;
+  dob: string;
+  gender: string;
+  address: string;
+  classId: string;
+  status: StudentStatus;
+  hasAllergies: boolean;
+  allergyNotes: string;
+  photoPublishConsent: boolean;
+  parents: { id?: string; email: string; name: string; phone: string }[];
+};
+
+function studentToDraft(s: StudentModel): StudentDraft {
+  return {
+    firstName: s.firstName,
+    lastName: s.lastName,
+    preferredName: s.preferredName ?? '',
+    dob: s.dob,
+    gender: s.gender,
+    address: s.address ?? '',
+    classId: s.classId ?? '',
+    status: s.status,
+    hasAllergies: s.hasAllergies,
+    allergyNotes: s.allergyNotes ?? '',
+    photoPublishConsent: s.photoPublishConsent,
+    parents: s.parents.map((p) => ({
+      id: p.id,
+      email: p.parentEmail,
+      name: p.parentName ?? '',
+      phone: p.parentPhone ?? '',
+    })),
+  };
+}
+
+function isDraftEqual(a: StudentDraft, b: StudentDraft): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+export function UserDetailModal({ visible, onClose, user, student, studentPhotoUrl, editable }: UserDetailModalProps) {
   if (!user && !student) return null;
+
+  const { profile } = useAuth();
+  const canEdit = !!(editable && student && (profile?.role === 'admin' || profile?.role === 'principal'));
 
   const isStudent = !!student;
   const name = isStudent ? `${student!.firstName} ${student!.lastName}` : user!.fullName;
@@ -50,8 +128,84 @@ export function UserDetailModal({ visible, onClose, user, student, studentPhotoU
   const role = isStudent ? undefined : user!.role;
   const rc = role ? (ROLE_STYLES[role] ?? ROLE_STYLES.parent) : undefined;
 
+  const { data: classes } = useClasses(student?.schoolId ?? '');
+  const adminUpdate = useAdminUpdateStudent();
+
+  const [editMode, setEditMode] = useState(false);
+  const initial = useMemo(() => (student ? studentToDraft(student) : null), [student?.id, student?.updatedAt]);
+  const [draft, setDraft] = useState<StudentDraft | null>(initial);
+
+  // Reset draft whenever the underlying student changes or modal closes.
+  useEffect(() => {
+    setDraft(initial);
+    setEditMode(false);
+  }, [initial?.firstName, initial?.lastName, initial?.dob, student?.id, visible]);
+
+  const dirty = !!(draft && initial && !isDraftEqual(draft, initial));
+
   function dialPhone(phone: string) {
     Linking.openURL(`tel:${phone}`);
+  }
+
+  function setField<K extends keyof StudentDraft>(key: K, val: StudentDraft[K]) {
+    setDraft((d) => (d ? { ...d, [key]: val } : d));
+  }
+
+  function setParentField(idx: number, key: 'email' | 'name' | 'phone', val: string) {
+    setDraft((d) => {
+      if (!d) return d;
+      const next = [...d.parents];
+      next[idx] = { ...next[idx], [key]: val };
+      return { ...d, parents: next };
+    });
+  }
+  function addParent() {
+    setDraft((d) => (d ? { ...d, parents: [...d.parents, { email: '', name: '', phone: '' }] } : d));
+  }
+  function removeParent(idx: number) {
+    setDraft((d) => (d ? { ...d, parents: d.parents.filter((_, i) => i !== idx) } : d));
+  }
+
+  async function handleSave() {
+    if (!student || !draft) return;
+    // Light validation
+    if (!draft.firstName.trim() || !draft.lastName.trim() || !draft.dob.trim()) {
+      Alert.alert('Required fields missing', 'First name, last name and DOB are required.');
+      return;
+    }
+    const cleanParents = draft.parents
+      .map((p) => ({ ...p, email: p.email.trim() }))
+      .filter((p) => p.email.length > 0);
+
+    try {
+      await adminUpdate.mutateAsync({
+        studentId: student.id,
+        firstName: draft.firstName.trim(),
+        lastName: draft.lastName.trim(),
+        preferredName: draft.preferredName.trim() || null,
+        dob: draft.dob.trim(),
+        gender: draft.gender,
+        address: draft.address.trim() || null,
+        classId: draft.classId || undefined,
+        status: draft.status,
+        hasAllergies: draft.hasAllergies,
+        allergyNotes: draft.hasAllergies ? (draft.allergyNotes.trim() || null) : null,
+        photoPublishConsent: draft.photoPublishConsent,
+        parents: cleanParents.map((p) => ({
+          email: p.email,
+          name: p.name.trim() || undefined,
+          phone: p.phone.trim() || undefined,
+        })),
+      });
+      setEditMode(false);
+    } catch (e: unknown) {
+      showFriendlyError("Couldn't save changes", e, 'student-detail-modal');
+    }
+  }
+
+  function handleCancel() {
+    setDraft(initial);
+    setEditMode(false);
   }
 
   return (
@@ -63,28 +217,41 @@ export function UserDetailModal({ visible, onClose, user, student, studentPhotoU
         style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
       >
         <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-          <View className="bg-white rounded-t-3xl px-5 pt-6 pb-10" style={{ maxHeight: '80%' }}>
+          <View className="bg-white rounded-t-3xl" style={{ maxHeight: '90%' }}>
             {/* Handle bar */}
-            <View className="w-10 h-1 rounded-full bg-gray-300 self-center mb-4" />
+            <View className="w-10 h-1 rounded-full bg-gray-300 self-center my-3" />
 
-            {/* Header */}
-            <View className="items-center mb-4">
-              <Avatar uri={photoUri} name={name} size={80} />
-              <Text className="text-lg font-sans-semibold text-text-primary mt-3">{name}</Text>
-              {rc && role && (
-                <View className="mt-1">
-                  <Badge label={role} color={rc.color} bg={rc.bg} />
-                </View>
-              )}
-              {isStudent && (
-                <View className="mt-1">
-                  <Badge label="" type="student" status={student!.status} />
-                </View>
-              )}
-            </View>
+            <ScrollView
+              showsVerticalScrollIndicator={true}
+              contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* Header */}
+              <View className="items-center mb-4">
+                <Avatar uri={photoUri} name={name} size={80} />
+                <Text className="text-lg font-sans-semibold text-text-primary mt-3">{name}</Text>
+                {rc && role && (
+                  <View className="mt-1">
+                    <Badge label={role} color={rc.color} bg={rc.bg} />
+                  </View>
+                )}
+                {isStudent && !editMode && (
+                  <View className="mt-1">
+                    <Badge label="" type="student" status={student!.status} />
+                  </View>
+                )}
+                {canEdit && !editMode && (
+                  <TouchableOpacity
+                    onPress={() => setEditMode(true)}
+                    className="mt-3 px-3 py-1.5 rounded-full"
+                    style={{ backgroundColor: COLORS.primary }}
+                  >
+                    <Text className="text-white text-xs font-sans-semibold">✏️  Edit</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {/* User details */}
+              {/* User details (view-only) */}
               {!isStudent && user && (
                 <>
                   <DetailRow label="Email" value={user.email} />
@@ -98,8 +265,8 @@ export function UserDetailModal({ visible, onClose, user, student, studentPhotoU
                 </>
               )}
 
-              {/* Student details */}
-              {isStudent && student && (
+              {/* Student VIEW mode */}
+              {isStudent && student && !editMode && (
                 <>
                   {student.preferredName && (
                     <DetailRow label="Nickname" value={student.preferredName} />
@@ -108,22 +275,16 @@ export function UserDetailModal({ visible, onClose, user, student, studentPhotoU
                   <DetailRow label="Gender" value={student.gender} />
                   <DetailRow label="Class" value={student.className ?? 'Unassigned'} />
                   <DetailRow label="Status" value={student.status} />
-
-                  {/* Allergy details */}
                   <DetailRow
                     label="Allergies"
                     value={student.hasAllergies ? (student.allergyNotes ?? 'Yes (no details)') : 'None'}
                   />
-
-                  {/* Photo consent */}
                   <DetailRow
                     label="Photo Consent"
                     value={student.photoPublishConsent ? 'Approved' : 'Not approved'}
                   />
-
                   <DetailRow label="Address" value={student.address} />
 
-                  {/* Parents */}
                   <View className="mt-3 mb-1">
                     <Text className="text-xs font-sans-semibold" style={{ color: COLORS.navy }}>
                       Parents ({student.parents.length})
@@ -146,15 +307,172 @@ export function UserDetailModal({ visible, onClose, user, student, studentPhotoU
                   )}
                 </>
               )}
+
+              {/* Student EDIT mode */}
+              {isStudent && student && editMode && draft && (
+                <>
+                  <EditRow label="First Name" value={draft.firstName} onChangeText={(v) => setField('firstName', v)} />
+                  <EditRow label="Last Name"  value={draft.lastName}  onChangeText={(v) => setField('lastName', v)} />
+                  <EditRow label="Nickname"   value={draft.preferredName} onChangeText={(v) => setField('preferredName', v)} />
+                  <EditRow label="Date of Birth (YYYY-MM-DD)" value={draft.dob} onChangeText={(v) => setField('dob', v)} keyboardType="default" autoCapitalize="none" />
+
+                  {/* Gender */}
+                  <View className="py-2 border-b border-gray-100">
+                    <Text className="text-xs text-text-muted mb-1">Gender</Text>
+                    <View className="flex-row gap-2">
+                      {(['male', 'female', 'other'] as const).map((g) => {
+                        const active = draft.gender === g;
+                        return (
+                          <TouchableOpacity
+                            key={g}
+                            onPress={() => setField('gender', g)}
+                            className={`px-3 py-1.5 rounded-full ${active ? 'bg-primary' : 'bg-gray-100'}`}
+                          >
+                            <Text className={`text-xs font-sans-semibold capitalize ${active ? 'text-white' : 'text-text-muted'}`}>
+                              {g}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* Class */}
+                  <View className="py-2 border-b border-gray-100">
+                    <Text className="text-xs text-text-muted mb-1">Class</Text>
+                    <View className="flex-row flex-wrap gap-2">
+                      {(classes ?? []).map((c) => {
+                        const active = draft.classId === c.id;
+                        return (
+                          <TouchableOpacity
+                            key={c.id}
+                            onPress={() => setField('classId', c.id)}
+                            className={`px-3 py-1.5 rounded-full ${active ? 'bg-primary' : 'bg-gray-100'}`}
+                          >
+                            <Text className={`text-xs font-sans-semibold ${active ? 'text-white' : 'text-text-muted'}`}>
+                              {c.name}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* Status */}
+                  <View className="py-2 border-b border-gray-100">
+                    <Text className="text-xs text-text-muted mb-1">Status</Text>
+                    <View className="flex-row gap-2">
+                      {(['active', 'inactive'] as const).map((s) => {
+                        const active = draft.status === s;
+                        return (
+                          <TouchableOpacity
+                            key={s}
+                            onPress={() => setField('status', s)}
+                            className={`px-3 py-1.5 rounded-full ${active ? 'bg-primary' : 'bg-gray-100'}`}
+                          >
+                            <Text className={`text-xs font-sans-semibold capitalize ${active ? 'text-white' : 'text-text-muted'}`}>
+                              {s}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* Allergies */}
+                  <View className="py-2 border-b border-gray-100">
+                    <View className="flex-row items-center justify-between">
+                      <Text className="text-xs text-text-muted">Has Allergies</Text>
+                      <Switch
+                        value={draft.hasAllergies}
+                        onValueChange={(v) => setField('hasAllergies', v)}
+                        trackColor={{ true: COLORS.primary }}
+                      />
+                    </View>
+                    {draft.hasAllergies && (
+                      <TextInput
+                        value={draft.allergyNotes}
+                        onChangeText={(v) => setField('allergyNotes', v)}
+                        placeholder="Notes…"
+                        multiline
+                        className="text-sm text-text-primary bg-gray-50 rounded-lg px-3 py-2 mt-2"
+                      />
+                    )}
+                  </View>
+
+                  {/* Photo consent */}
+                  <View className="py-2 border-b border-gray-100">
+                    <View className="flex-row items-center justify-between">
+                      <Text className="text-xs text-text-muted">Photo Publish Consent</Text>
+                      <Switch
+                        value={draft.photoPublishConsent}
+                        onValueChange={(v) => setField('photoPublishConsent', v)}
+                        trackColor={{ true: COLORS.primary }}
+                      />
+                    </View>
+                  </View>
+
+                  <EditRow label="Address" value={draft.address} onChangeText={(v) => setField('address', v)} />
+
+                  {/* Parents (editable) */}
+                  <View className="mt-3 mb-1 flex-row items-center justify-between">
+                    <Text className="text-xs font-sans-semibold" style={{ color: COLORS.navy }}>
+                      Parents ({draft.parents.length})
+                    </Text>
+                    <TouchableOpacity onPress={addParent}>
+                      <Text className="text-xs font-sans-semibold" style={{ color: COLORS.primary }}>+ Add</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {draft.parents.map((p, i) => (
+                    <View key={i} className="bg-gray-50 rounded-xl p-3 mb-2">
+                      <View className="flex-row items-center justify-between mb-1">
+                        <Text className="text-xs font-sans-semibold text-text-primary">Parent {i + 1}</Text>
+                        <TouchableOpacity onPress={() => removeParent(i)}>
+                          <Text className="text-xs text-error">Remove</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <EditRow label="Name" value={p.name} onChangeText={(v) => setParentField(i, 'name', v)} />
+                      <EditRow label="Email" value={p.email} onChangeText={(v) => setParentField(i, 'email', v)} keyboardType="email-address" autoCapitalize="none" />
+                      <EditRow label="Phone" value={p.phone} onChangeText={(v) => setParentField(i, 'phone', v)} keyboardType="phone-pad" />
+                    </View>
+                  ))}
+                </>
+              )}
             </ScrollView>
 
-            {/* Close button */}
-            <TouchableOpacity
-              onPress={onClose}
-              className="mt-4 bg-gray-100 rounded-xl py-3 items-center"
-            >
-              <Text className="text-sm font-sans-semibold text-text-muted">Close</Text>
-            </TouchableOpacity>
+            {/* Footer buttons */}
+            <View className="px-5 py-3 border-t border-gray-100 flex-row gap-2">
+              {editMode ? (
+                <>
+                  <TouchableOpacity
+                    onPress={handleCancel}
+                    className="flex-1 bg-gray-100 rounded-xl py-3 items-center"
+                  >
+                    <Text className="text-sm font-sans-semibold text-text-muted">Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleSave}
+                    disabled={!dirty || adminUpdate.isPending}
+                    className="flex-1 rounded-xl py-3 items-center"
+                    style={{
+                      backgroundColor: dirty ? COLORS.primary : COLORS.divider,
+                      opacity: adminUpdate.isPending ? 0.7 : 1,
+                    }}
+                  >
+                    <Text className="text-sm font-sans-semibold text-white">
+                      {adminUpdate.isPending ? 'Saving…' : 'Save'}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <TouchableOpacity
+                  onPress={onClose}
+                  className="flex-1 bg-gray-100 rounded-xl py-3 items-center"
+                >
+                  <Text className="text-sm font-sans-semibold text-text-muted">Close</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </TouchableOpacity>
       </TouchableOpacity>

@@ -56,7 +56,7 @@ export default function LoginScreen() {
             Sign in to manage your child's
           </Text>
           <Text style={{ color: '#8B7D6B', textAlign: 'center', fontSize: 14, marginBottom: 32 }}>
-            Dhamma School journey
+            Sunday School journey
           </Text>
 
           {/* Divider */}

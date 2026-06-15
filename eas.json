@@ -23,6 +23,16 @@
         "buildType": "apk"
       }
     },
+    "ios-simulator": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "487729685876-quk6p4gsu1c3tlve5l1ec3kjvr905qck.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_PLACES_API_KEY": "AIzaSyAb5Pa56-iBnmHJxvSoImRztz85-YKTHlE"
+      },
+      "ios": {
+        "simulator": true
+      }
+    },
     "production": {
       "android": {
         "buildType": "app-bundle"

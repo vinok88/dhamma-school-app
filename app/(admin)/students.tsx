@@ -13,7 +13,10 @@ import { formatAge } from '@/utils/date';
 import { COLORS } from '@/constants';
 import { StudentModel, StudentStatus } from '@/types';
 
-const STATUS_FILTERS: (StudentStatus | 'all')[] = ['all', 'active', 'pending', 'under_review', 'inactive', 'dropped'];
+// Only Active / Inactive are reachable from the UI today, so the filter
+// strip is limited to those plus 'all'. The DB enum keeps the other values
+// for legacy rows / future workflows.
+const STATUS_FILTERS: (StudentStatus | 'all')[] = ['all', 'active', 'inactive'];
 
 function StudentRow({ student: s, onStatusChange, onPress }: { student: any; onStatusChange: (id: string, status: StudentStatus) => void; onPress: () => void }) {
   const { data: signedPhotoUrl } = useStudentPhotoUrl(s.photoUrl);
@@ -93,32 +96,44 @@ export default function StudentsScreen() {
         />
       </View>
 
-      {/* Status filter */}
-      <FlatList
-        horizontal
-        data={STATUS_FILTERS}
-        keyExtractor={(s) => s}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 8, gap: 8 }}
-        style={{ backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.divider, maxHeight: 50 }}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => setStatusFilter(item)}
-            className={`px-3 py-1.5 rounded-full ${statusFilter === item ? 'bg-primary' : 'bg-gray-100'}`}
-          >
-            <Text className={`text-xs font-sans-semibold capitalize ${statusFilter === item ? 'text-white' : 'text-text-muted'}`}>
-              {item}
-            </Text>
-          </TouchableOpacity>
-        )}
-      />
+      {/* Status filter — fixed height so it never gets squeezed by the list below */}
+      <View
+        style={{
+          height: 50,
+          backgroundColor: COLORS.white,
+          borderBottomWidth: 1,
+          borderBottomColor: COLORS.divider,
+          flexShrink: 0,
+        }}
+      >
+        <FlatList
+          horizontal
+          data={STATUS_FILTERS}
+          keyExtractor={(s) => s}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 12, alignItems: 'center', gap: 8 }}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => setStatusFilter(item)}
+              className={`px-3 py-1.5 rounded-full ${statusFilter === item ? 'bg-primary' : 'bg-gray-100'}`}
+            >
+              <Text className={`text-xs font-sans-semibold capitalize ${statusFilter === item ? 'text-white' : 'text-text-muted'}`}>
+                {item}
+              </Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
 
       {isLoading ? (
         <LoadingSpinner fullScreen />
       ) : !filtered.length ? (
-        <EmptyState icon="🔍" title="No students found" />
+        <View style={{ flex: 1 }}>
+          <EmptyState icon="🔍" title="No students found" />
+        </View>
       ) : (
         <FlatList
+          style={{ flex: 1 }}
           data={filtered}
           keyExtractor={(s) => s.id}
           contentContainerStyle={{ padding: 16, gap: 8 }}
@@ -134,6 +149,7 @@ export default function StudentsScreen() {
       <UserDetailModal
         visible={!!selectedStudent}
         student={selectedStudent}
+        editable
         onClose={() => { setSelectedStudent(null); setSelectedStudentPhotoUrl(null); }}
       />
     </SafeAreaView>

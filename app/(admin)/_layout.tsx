@@ -37,6 +37,7 @@ export default function AdminLayout() {
       <Tabs.Screen name="manage-users" options={{ href: null }} />
       <Tabs.Screen name="add-student" options={{ href: null }} />
       <Tabs.Screen name="add-teacher" options={{ href: null }} />
+      <Tabs.Screen name="bulk-add-students" options={{ href: null }} />
     </Tabs>
   );
 }

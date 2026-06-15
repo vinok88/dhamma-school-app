@@ -131,8 +131,7 @@ export default function AdminDashboard() {
   );
 }
 
-// TODO: replace APP_FULL_NAME with import after constants are imported
-const APP_FULL_NAME = 'Mahamevnawa Dhamma School – Melbourne';
+const APP_FULL_NAME = 'Mahamevnawa Sunday School – Melbourne';
 
 function StatCard({ label, value, icon, color }: { label: string; value: number; icon: string; color: string }) {
   return (

@@ -211,6 +211,23 @@ export interface UpdateStudentPayload {
   photoPublishConsent?: boolean;
 }
 
+export interface AdminUpdateStudentPayload {
+  studentId: string;
+  firstName?: string;
+  lastName?: string;
+  preferredName?: string | null;
+  dob?: string;
+  gender?: string;
+  address?: string | null;
+  classId?: string;
+  status?: StudentStatus;
+  hasAllergies?: boolean;
+  allergyNotes?: string | null;
+  photoPublishConsent?: boolean;
+  /** If provided, the existing parent links are deleted and replaced with this set. */
+  parents?: { email: string; name?: string; phone?: string }[];
+}
+
 // Parent-safe student update — only exposes columns parents are allowed to edit.
 // (RLS still permits more, but the app form does not.)
 export function useUpdateStudent() {
@@ -228,6 +245,57 @@ export function useUpdateStudent() {
         .update(update)
         .eq('id', payload.studentId);
       if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['students'] }),
+  });
+}
+
+// Full student update for admin/principal — every column on the students row,
+// plus an optional parent-list replace. RLS still permits / blocks based on
+// the caller's actual role.
+export function useAdminUpdateStudent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: AdminUpdateStudentPayload) => {
+      const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (payload.firstName !== undefined)            update.first_name            = payload.firstName;
+      if (payload.lastName !== undefined)             update.last_name             = payload.lastName;
+      if (payload.preferredName !== undefined)        update.preferred_name        = payload.preferredName;
+      if (payload.dob !== undefined)                  update.dob                   = payload.dob;
+      if (payload.gender !== undefined)               update.gender                = payload.gender;
+      if (payload.address !== undefined)              update.address               = payload.address;
+      if (payload.classId !== undefined)              update.class_id              = payload.classId;
+      if (payload.status !== undefined)               update.status                = payload.status;
+      if (payload.hasAllergies !== undefined)         update.has_allergies         = payload.hasAllergies;
+      if (payload.allergyNotes !== undefined)         update.allergy_notes         = payload.allergyNotes;
+      if (payload.photoPublishConsent !== undefined)  update.photo_publish_consent = payload.photoPublishConsent;
+
+      // Touch the row even if only parents changed (cheap)
+      const { error } = await supabase
+        .from(TABLES.STUDENTS)
+        .update(update)
+        .eq('id', payload.studentId);
+      if (error) throw error;
+
+      if (payload.parents !== undefined) {
+        const { error: delErr } = await supabase
+          .from(TABLES.STUDENT_PARENTS)
+          .delete()
+          .eq('student_id', payload.studentId);
+        if (delErr) throw delErr;
+        if (payload.parents.length) {
+          const linkRows = payload.parents.map((p) => ({
+            student_id: payload.studentId,
+            parent_email: p.email.toLowerCase().trim(),
+            parent_name: p.name?.trim() || null,
+            parent_phone: p.phone?.trim() || null,
+          }));
+          const { error: insErr } = await supabase
+            .from(TABLES.STUDENT_PARENTS)
+            .insert(linkRows);
+          if (insErr) throw insErr;
+        }
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['students'] }),
   });

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Dhamma School",
+    "name": "Sunday School",
     "slug": "dhamma-school",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -19,7 +19,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Used to take student profile photos.",
         "NSPhotoLibraryUsageDescription": "Used to select student profile photos.",
-        "NSPhotoLibraryAddUsageDescription": "Used to save photos."
+        "NSPhotoLibraryAddUsageDescription": "Used to save photos.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -52,7 +53,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Dhamma School to access your photos for student profiles."
+          "photosPermission": "Allow Sunday School to access your photos for student profiles."
         }
       ],
       [

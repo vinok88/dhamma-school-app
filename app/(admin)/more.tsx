@@ -8,6 +8,7 @@ import { COLORS } from '@/constants';
 
 const SHARED_ITEMS = [
   { label: 'Add Student', icon: '➕', route: '/(admin)/add-student', desc: 'Register a child and link parent emails' },
+  { label: 'Bulk Add Students', icon: '📥', route: '/(admin)/bulk-add-students', desc: 'Import or update many students from a CSV' },
   { label: 'Add Teacher', icon: '📨', route: '/(admin)/add-teacher', desc: 'Invite a teacher by email' },
   { label: 'Teachers', icon: '👩‍🏫', route: '/(admin)/teachers', desc: 'Manage teacher accounts' },
   { label: 'Events', icon: '📅', route: '/(admin)/events', desc: 'School events & calendar' },
@@ -26,10 +27,11 @@ export default function MoreScreen() {
 
   const menuItems = [
     SHARED_ITEMS[0], // Add Student
-    SHARED_ITEMS[1], // Add Teacher
-    SHARED_ITEMS[2], // Teachers
+    SHARED_ITEMS[1], // Bulk Add Students
+    SHARED_ITEMS[2], // Add Teacher
+    SHARED_ITEMS[3], // Teachers
     isAdmin ? ADMIN_ONLY : PRINCIPAL_ONLY,
-    ...SHARED_ITEMS.slice(3), // Events, Reports, Announcements, Notifications
+    ...SHARED_ITEMS.slice(4), // Events, Reports, Announcements, Notifications
   ];
 
   const roleLabel = isAdmin ? 'Admin' : 'Principal';
