@@ -1,11 +1,51 @@
 import React, { useState, useEffect, useContext, createContext, useCallback, useRef } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { Session, User } from '@supabase/supabase-js';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { supabase } from '@/lib/supabase';
 import { UserModel, UserRole } from '@/types';
 import { TABLES, STORAGE } from '@/constants';
+
+// Allows the web-based OAuth redirect (iOS Google sign-in) to complete.
+WebBrowser.maybeCompleteAuthSession();
+
+/** Parse OAuth params from either the query (?) or fragment (#) of a redirect URL. */
+function getParamsFromUrl(url: string): Record<string, string> {
+  const params: Record<string, string> = {};
+  const queryPart = url.split('?')[1]?.split('#')[0];
+  const hashPart = url.split('#')[1];
+  for (const part of [queryPart, hashPart]) {
+    if (!part) continue;
+    for (const pair of part.split('&')) {
+      const [k, v] = pair.split('=');
+      if (k) params[decodeURIComponent(k)] = decodeURIComponent(v ?? '');
+    }
+  }
+  return params;
+}
+
+/** Establish a Supabase session from an OAuth redirect URL (PKCE code or implicit tokens). */
+async function createSessionFromUrl(url: string) {
+  const params = getParamsFromUrl(url);
+  if (params.error) throw new Error(params.error_description || params.error);
+  if (params.code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(params.code);
+    if (error) throw error;
+    return;
+  }
+  if (params.access_token) {
+    const { error } = await supabase.auth.setSession({
+      access_token: params.access_token,
+      refresh_token: params.refresh_token,
+    });
+    if (error) throw error;
+    return;
+  }
+  throw new Error('No authorization code or tokens found in the redirect URL');
+}
 
 interface AuthContextType {
   session: Session | null;
@@ -152,6 +192,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signInWithGoogle() {
+    // iOS: the native Google SDK embeds a nonce in the id_token that the free
+    // google-signin library does not expose, so Supabase's signInWithIdToken
+    // rejects it. Use the web OAuth flow on iOS to avoid the nonce entirely.
+    if (Platform.OS === 'ios') {
+      await signInWithGoogleWeb();
+      return;
+    }
+
+    // Android: native id-token flow (Android tokens carry no nonce).
     GoogleSignin.configure({
       webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
       iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
@@ -165,6 +214,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       token: idToken,
     });
     if (error) throw error;
+  }
+
+  // iOS Google sign-in via Supabase web OAuth in an in-app browser session.
+  async function signInWithGoogleWeb() {
+    const redirectTo = Linking.createURL('auth/callback');
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo, skipBrowserRedirect: true },
+    });
+    if (error) throw error;
+    if (!data?.url) throw new Error('No OAuth URL returned');
+
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    if (result.type === 'cancel' || result.type === 'dismiss') return; // user cancelled
+    if (result.type !== 'success' || !result.url) {
+      throw new Error('Google sign-in was not completed');
+    }
+    await createSessionFromUrl(result.url);
   }
 
   async function refreshProfile() {
