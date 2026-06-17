@@ -150,6 +150,7 @@ export function useConversations(userId: string) {
 }
 
 export function useMessageThread(userId: string, recipientId: string) {
+  const qc = useQueryClient();
   return useQuery({
     queryKey: ['messages', userId, recipientId],
     queryFn: async () => {
@@ -162,13 +163,19 @@ export function useMessageThread(userId: string, recipientId: string) {
         .order('created_at', { ascending: true });
       if (error) throw error;
 
-      // Mark unread as read
-      await supabase
+      // Mark unread as read. If any rows were actually updated, refresh the
+      // conversations list so its unread badge clears immediately (not just on
+      // the next focus/poll). `.select()` returns the rows that changed.
+      const { data: marked } = await supabase
         .from(TABLES.MESSAGES)
         .update({ read_at: new Date().toISOString() })
         .eq('sender_id', recipientId)
         .eq('recipient_id', userId)
-        .is('read_at', null);
+        .is('read_at', null)
+        .select('id');
+      if (marked && marked.length > 0) {
+        qc.invalidateQueries({ queryKey: ['conversations', userId] });
+      }
 
       return (data ?? []).map(mapMessage);
     },
