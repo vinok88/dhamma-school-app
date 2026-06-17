@@ -73,8 +73,10 @@ export function AddressAutocomplete({
         setSuggestions([]);
         setShowSuggestions(false);
       }
-    } catch {
-      // Network error — silently fail, user can type manually
+    } catch (e) {
+      // Network/API error (e.g. missing or rejected API key). User can still
+      // type the address manually. Logged in dev only — never shown to users.
+      if (__DEV__) console.warn('[AddressAutocomplete] request failed', e);
     } finally {
       setLoading(false);
     }
