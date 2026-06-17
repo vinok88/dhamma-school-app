@@ -4,7 +4,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/query-client';
 import { useAuth, AuthProvider } from '@/hooks/useAuth';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { AppSplash } from '@/components/ui/AppSplash';
 import { useFonts, DMSerifDisplay_400Regular } from '@expo-google-fonts/dm-serif-display';
 import { WorkSans_400Regular, WorkSans_500Medium, WorkSans_600SemiBold } from '@expo-google-fonts/work-sans';
 import * as SplashScreen from 'expo-splash-screen';
@@ -25,7 +25,12 @@ Notifications.setNotificationHandler({
 });
 
 function RootLayoutNav() {
-  const { session, profile, loading, viewMode } = useAuth();
+  const { session, profile, loading, profileLoading, viewMode } = useAuth();
+  // After login there's a brief window where the session exists but the profile
+  // (and therefore the role) is still being fetched. Treat that as "still
+  // resolving" so we show the splash instead of flashing the complete-profile
+  // screen before redirecting to the correct home.
+  const resolvingProfile = !!session && !profile && profileLoading;
   const router = useRouter();
   const segments = useSegments();
 
@@ -112,6 +117,10 @@ function RootLayoutNav() {
 
   useEffect(() => {
     if (loading) return;
+    // Don't decide the destination until the profile fetch settles, otherwise we
+    // momentarily treat a logged-in user as "no profile" and bounce them to
+    // complete-profile before their role loads.
+    if (resolvingProfile) return;
 
     const inAuth = segments[0] === '(auth)';
 
@@ -137,9 +146,9 @@ function RootLayoutNav() {
         else router.replace('/(admin)'); // admin + principal
       }
     }
-  }, [session, profile, loading, viewMode]);
+  }, [session, profile, loading, resolvingProfile, viewMode]);
 
-  if (loading) return <LoadingSpinner fullScreen label="Loading…" />;
+  if (loading || resolvingProfile) return <AppSplash />;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>

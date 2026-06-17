@@ -52,6 +52,8 @@ interface AuthContextType {
   user: User | null;
   profile: UserModel | null;
   loading: boolean;
+  /** True while a profile fetch is in flight (e.g. just after login). */
+  profileLoading: boolean;
   /** UI-effective role. May differ from `profile.role` if the user has switched view. */
   viewMode: UserRole | null;
   /** Override the UI view mode. Persists per user. */
@@ -72,52 +74,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserModel | null>(null);
   const [loading, setLoading] = useState(true);
+  // True while a profile fetch is in flight. Used (together with a missing
+  // profile) to keep showing the splash during the post-login window instead of
+  // briefly flashing the complete-profile screen before the role is known.
+  const [profileLoading, setProfileLoading] = useState(false);
   const [viewModeOverride, setViewModeOverride] = useState<UserRole | null>(null);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from(TABLES.USER_PROFILES)
-      .select('*')
-      .eq('id', userId)
-      .single();
+    setProfileLoading(true);
+    try {
+      const { data } = await supabase
+        .from(TABLES.USER_PROFILES)
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-    if (data) {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (data) {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
 
-      // Resolve stored profile_photo_url path → signed URL (1 hr) so the
-      // app can render <Image> directly without any per-screen plumbing.
-      let signedPhotoUrl: string | undefined;
-      const path = data.profile_photo_url as string | null | undefined;
-      if (path && !path.startsWith('http')) {
-        try {
-          const { data: urlData } = await supabase.storage
-            .from(STORAGE.PROFILE_PHOTOS)
-            .createSignedUrl(path, 3600);
-          signedPhotoUrl = urlData?.signedUrl ?? undefined;
-        } catch {
-          // Non-fatal — fall back to initials avatar
+        // Resolve stored profile_photo_url path → signed URL (1 hr) so the
+        // app can render <Image> directly without any per-screen plumbing.
+        let signedPhotoUrl: string | undefined;
+        const path = data.profile_photo_url as string | null | undefined;
+        if (path && !path.startsWith('http')) {
+          try {
+            const { data: urlData } = await supabase.storage
+              .from(STORAGE.PROFILE_PHOTOS)
+              .createSignedUrl(path, 3600);
+            signedPhotoUrl = urlData?.signedUrl ?? undefined;
+          } catch {
+            // Non-fatal — fall back to initials avatar
+          }
+        } else if (path) {
+          signedPhotoUrl = path;
         }
-      } else if (path) {
-        signedPhotoUrl = path;
-      }
 
-      setProfile({
-        id: data.id,
-        schoolId: data.school_id,
-        fullName: data.full_name,
-        preferredName: data.preferred_name,
-        phone: data.phone,
-        address: data.address,
-        role: data.role,
-        status: data.status,
-        profilePhotoUrl: signedPhotoUrl,
-        fcmToken: data.fcm_token,
-        email: authUser?.email,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at,
-      });
+        setProfile({
+          id: data.id,
+          schoolId: data.school_id,
+          fullName: data.full_name,
+          preferredName: data.preferred_name,
+          phone: data.phone,
+          address: data.address,
+          role: data.role,
+          status: data.status,
+          profilePhotoUrl: signedPhotoUrl,
+          fcmToken: data.fcm_token,
+          email: authUser?.email,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+        });
+      }
+    } finally {
+      setProfileLoading(false);
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -262,6 +273,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       profile,
       loading,
+      profileLoading,
       viewMode,
       setViewMode,
       signOut,
