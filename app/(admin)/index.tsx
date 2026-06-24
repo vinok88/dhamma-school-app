@@ -10,7 +10,7 @@ import { useTeachers } from '@/hooks/useTeachers';
 import { useClasses } from '@/hooks/useClasses';
 import { useUpcomingEvents } from '@/hooks/useEvents';
 import { useAnnouncements } from '@/hooks/useAnnouncements';
-import { useAttendanceReport } from '@/hooks/useAttendance';
+import { usePresentCountsByDate } from '@/hooks/useAttendance';
 import { AnnouncementCard } from '@/components/AnnouncementCard';
 import { Card } from '@/components/ui/Card';
 import { toIsoDate, lastNSundays } from '@/utils/date';
@@ -32,14 +32,10 @@ export default function AdminDashboard() {
   const sundays = lastNSundays(4);
   const from = toIsoDate(sundays[3]);
   const to = toIsoDate(sundays[0]);
-  const { data: attendanceReport } = useAttendanceReport(schoolId, '', from, to);
+  const { data: presentCounts } = usePresentCountsByDate(schoolId, from, to);
 
-  // Build chart data for last 4 Sundays
-  const chartData = sundays.reverse().map((d) => {
-    const dateStr = toIsoDate(d);
-    const dayRecords = (attendanceReport ?? []).filter((a) => a.sessionDate === dateStr);
-    return dayRecords.filter((a) => a.status !== 'absent').length;
-  });
+  // Build chart data for last 4 Sundays (students present per session).
+  const chartData = sundays.reverse().map((d) => presentCounts?.[toIsoDate(d)] ?? 0);
 
   const activeStudents = students?.filter((s) => s.status === 'active').length ?? 0;
   const activeTeachers = teachers?.filter((t) => t.status === 'active').length ?? 0;

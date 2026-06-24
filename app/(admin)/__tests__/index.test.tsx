@@ -32,6 +32,7 @@ jest.mock('@/hooks/useAnnouncements', () => ({
 
 jest.mock('@/hooks/useAttendance', () => ({
   useAttendanceReport: () => require('@/test-utils/fixtures').queryOk([]),
+  usePresentCountsByDate: () => require('@/test-utils/fixtures').queryOk({}),
 }));
 
 jest.mock('@/components/AnnouncementCard', () => ({ AnnouncementCard: () => null }));

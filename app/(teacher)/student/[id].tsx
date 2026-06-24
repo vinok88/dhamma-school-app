@@ -17,7 +17,7 @@ export default function StudentDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: student, isLoading } = useStudentDetail(id);
-  const { data: history } = useStudentAttendanceHistory(id);
+  const { data: history } = useStudentAttendanceHistory(id, student?.classId);
   const { data: signedPhotoUrl } = useStudentPhotoUrl(student?.photoUrl);
 
   if (isLoading) return <LoadingSpinner fullScreen />;

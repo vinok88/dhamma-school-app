@@ -3,6 +3,14 @@ import { supabase } from '@/lib/supabase';
 import { AttendanceModel, AttendanceStatus } from '@/types';
 import { TABLES } from '@/constants';
 import { toIsoDate } from '@/utils/date';
+import {
+  computeAttendanceReport,
+  computePresentCountsByDate,
+  computeStudentHistory,
+  type AttendanceReportRow,
+} from '@/utils/attendance';
+
+export type { AttendanceReportRow };
 
 function mapAttendance(d: Record<string, unknown>): AttendanceModel {
   const student = d.students as Record<string, unknown> | null;
@@ -40,18 +48,45 @@ export function useTodayAttendance(classId: string, sessionDate?: Date) {
   });
 }
 
-export function useStudentAttendanceHistory(studentId: string, limit = 8) {
-  return useQuery({
-    queryKey: ['attendance', 'history', studentId],
+/**
+ * A student's recent attendance with *derived* absence (mirrors the report
+ * logic): for each of the class's most recent active sessions (a date with >=1
+ * check-in), the student is shown present if they were checked in, otherwise
+ * absent — even when no record exists. Holidays (no check-ins) never appear.
+ * Falls back to the student's raw records when `classId` is unknown.
+ */
+export function useStudentAttendanceHistory(studentId: string, classId?: string, limit = 8) {
+  return useQuery<AttendanceModel[]>({
+    queryKey: ['attendance', 'history', studentId, classId ?? '', limit],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // The student's own records.
+      const { data: ownRecs, error: ownErr } = await supabase
         .from(TABLES.ATTENDANCE_RECORDS)
         .select('*')
         .eq('student_id', studentId)
-        .order('session_date', { ascending: false })
-        .limit(limit);
-      if (error) throw error;
-      return (data ?? []).map(mapAttendance);
+        .order('session_date', { ascending: false });
+      if (ownErr) throw ownErr;
+      const own = (ownRecs ?? []).map(mapAttendance);
+
+      // Without the class we can't tell which sessions actually ran.
+      if (!classId) return own.slice(0, limit);
+
+      const { data: clsRecs, error: clsErr } = await supabase
+        .from(TABLES.ATTENDANCE_RECORDS)
+        .select('session_date, status')
+        .eq('class_id', classId);
+      if (clsErr) throw clsErr;
+
+      return computeStudentHistory(
+        own,
+        (clsRecs ?? []).map((r) => ({
+          sessionDate: r.session_date as string,
+          status: r.status as AttendanceStatus,
+        })),
+        studentId,
+        classId,
+        limit,
+      );
     },
     enabled: !!studentId,
   });
@@ -188,21 +223,78 @@ export function useMarkAbsent() {
   });
 }
 
-export function useAttendanceReport(schoolId: string, classId: string, from: string, to: string) {
-  return useQuery({
-    queryKey: ['attendance', 'report', schoolId, classId, from, to],
+/** Number of students present per session date (for dashboard trend charts). */
+export function usePresentCountsByDate(schoolId: string, from: string, to: string) {
+  return useQuery<Record<string, number>>({
+    queryKey: ['attendance', 'present-counts', schoolId, from, to],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from(TABLES.ATTENDANCE_RECORDS)
-        .select('*, students(first_name, last_name)')
+        .select('session_date, status')
         .eq('school_id', schoolId)
         .gte('session_date', from)
-        .lte('session_date', to)
-        .order('session_date', { ascending: false });
-      if (classId) query = query.eq('class_id', classId);
-      const { data, error } = await query;
+        .lte('session_date', to);
       if (error) throw error;
-      return (data ?? []).map(mapAttendance);
+      return computePresentCountsByDate(
+        (data ?? []).map((r) => ({
+          sessionDate: r.session_date as string,
+          status: r.status as AttendanceStatus,
+        })),
+      );
+    },
+    enabled: !!(schoolId && from && to),
+  });
+}
+
+/**
+ * Attendance report with *derived* absence.
+ *
+ * A session (class + date) only counts if at least one student was checked in —
+ * that distinguishes a real session from a holiday/cancelled day, which has no
+ * check-ins. For every such active session, each enrolled student who wasn't
+ * checked in is counted absent, whether they were explicitly marked absent or
+ * simply never recorded. This keeps attendance % honest without relying on
+ * teachers manually marking every no-show.
+ */
+export function useAttendanceReport(schoolId: string, classId: string, from: string, to: string) {
+  return useQuery<AttendanceReportRow[]>({
+    queryKey: ['attendance', 'report', schoolId, classId, from, to],
+    queryFn: async () => {
+      // 1. Attendance records in range.
+      let recQuery = supabase
+        .from(TABLES.ATTENDANCE_RECORDS)
+        .select('student_id, class_id, session_date, status')
+        .eq('school_id', schoolId)
+        .gte('session_date', from)
+        .lte('session_date', to);
+      if (classId) recQuery = recQuery.eq('class_id', classId);
+      const { data: recs, error: recErr } = await recQuery;
+      if (recErr) throw recErr;
+
+      // 2. Active student roster (a student belongs to a single class).
+      let rosterQuery = supabase
+        .from(TABLES.STUDENTS)
+        .select('id, class_id, first_name, last_name')
+        .eq('school_id', schoolId)
+        .eq('status', 'active');
+      if (classId) rosterQuery = rosterQuery.eq('class_id', classId);
+      const { data: roster, error: rosterErr } = await rosterQuery;
+      if (rosterErr) throw rosterErr;
+
+      // 3. Derive present/absent per student (absence inferred for active sessions).
+      return computeAttendanceReport(
+        (recs ?? []).map((r) => ({
+          studentId: r.student_id as string,
+          classId: r.class_id as string,
+          sessionDate: r.session_date as string,
+          status: r.status as AttendanceStatus,
+        })),
+        (roster ?? []).map((s) => ({
+          id: s.id as string,
+          classId: s.class_id as string,
+          name: `${s.first_name ?? ''} ${s.last_name ?? ''}`.trim(),
+        })),
+      );
     },
     enabled: !!(schoolId && from && to),
   });

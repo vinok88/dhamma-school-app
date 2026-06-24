@@ -24,35 +24,25 @@ export default function ReportsScreen() {
   const from = toIsoDate(sundays[sundays.length - 1]);
   const to = toIsoDate(sundays[0]);
 
-  const { data: records, isLoading, refetch } = useAttendanceReport(
+  const { data: report, isLoading, refetch } = useAttendanceReport(
     loaded ? schoolId : '',
     selectedClassId,
     from,
     to
   );
 
-  // Aggregate by student
-  const studentMap: Record<string, { name: string; present: number; absent: number }> = {};
-  (records ?? []).forEach((r) => {
-    const key = r.studentId;
-    if (!studentMap[key]) {
-      studentMap[key] = {
-        name: `${r.studentFirstName ?? ''} ${r.studentLastName ?? ''}`.trim(),
-        present: 0,
-        absent: 0,
-      };
-    }
-    if (r.status === 'absent') studentMap[key].absent++;
-    else studentMap[key].present++;
-  });
-
-  const rows = Object.entries(studentMap).map(([, v]) => ({
-    name: v.name,
-    present: v.present,
-    absent: v.absent,
-    total: v.present + v.absent,
-    percentage: v.present + v.absent > 0 ? Math.round((v.present / (v.present + v.absent)) * 100) : 0,
-  })).sort((a, b) => b.percentage - a.percentage);
+  // The hook already derives present/absent per student (absence is inferred for
+  // active sessions). Only show students whose class actually met in the period.
+  const rows = (report ?? [])
+    .map((v) => ({
+      name: v.name,
+      present: v.present,
+      absent: v.absent,
+      total: v.present + v.absent,
+      percentage: v.present + v.absent > 0 ? Math.round((v.present / (v.present + v.absent)) * 100) : 0,
+    }))
+    .filter((r) => r.total > 0)
+    .sort((a, b) => b.percentage - a.percentage);
 
   function exportCSV() {
     const header = 'Name,Present,Absent,Total,Percentage\n';
