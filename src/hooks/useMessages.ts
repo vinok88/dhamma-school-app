@@ -180,7 +180,7 @@ export function useMessageThread(userId: string, recipientId: string) {
       return (data ?? []).map(mapMessage);
     },
     enabled: !!(userId && recipientId),
-    refetchInterval: 5000, // Poll every 5s for new messages
+    refetchInterval: 30_000, // Poll every 30s for new messages
   });
 }
 
