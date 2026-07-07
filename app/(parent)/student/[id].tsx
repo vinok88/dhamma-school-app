@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useStudentDetail } from '@/hooks/useStudents';
@@ -110,6 +110,36 @@ export default function StudentStatusScreen() {
             </View>
           ) : null}
         </Card>
+
+        {/* Student ID — share with another guardian to link them */}
+        {student.displayId ? (
+          <Card className="mb-4">
+            <Text className="text-xs uppercase tracking-widest mb-1" style={{ color: COLORS.textMuted }}>
+              Student ID
+            </Text>
+            <View className="flex-row items-center justify-between">
+              <Text style={{ fontSize: 20, fontFamily: 'DMSerifDisplay_400Regular', color: COLORS.navy, letterSpacing: 1 }}>
+                {student.displayId}
+              </Text>
+              <TouchableOpacity
+                onPress={() => Share.share({
+                  message:
+                    `Link to ${studentDisplayName(student)} on the Dhamma School app:\n` +
+                    `Student ID: ${student.displayId}\n` +
+                    `You'll also need their last name and date of birth to confirm.`,
+                })}
+                className="rounded-full px-4 py-2"
+                style={{ backgroundColor: COLORS.primary }}
+                activeOpacity={0.85}
+              >
+                <Text className="text-white text-xs font-sans-semibold">↗  Share</Text>
+              </TouchableOpacity>
+            </View>
+            <Text className="text-xs mt-2" style={{ color: COLORS.textMuted }}>
+              Share this ID with another parent/guardian so they can link to this child.
+            </Text>
+          </Card>
+        ) : null}
 
         {/* Status note */}
         {student.statusNote && (

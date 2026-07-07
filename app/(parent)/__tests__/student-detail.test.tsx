@@ -32,6 +32,23 @@ describe('Parent StudentStatusScreen', () => {
     expect(screen.getAllByText(/Anna/).length).toBeGreaterThan(0);
   });
 
+  it('shows the Student ID with a Share action once assigned', () => {
+    (useStudentDetail as jest.Mock).mockReturnValue(
+      queryOk(makeStudent({ displayId: 'SUN-00042' })),
+    );
+    renderScreen(<StudentStatusScreen />);
+    expect(screen.getByText('SUN-00042')).toBeTruthy();
+    expect(screen.getByText(/↗.*Share/)).toBeTruthy(); // the Share button, not the helper text
+  });
+
+  it('hides the Student ID block before one is assigned', () => {
+    (useStudentDetail as jest.Mock).mockReturnValue(
+      queryOk(makeStudent({ displayId: undefined })),
+    );
+    renderScreen(<StudentStatusScreen />);
+    expect(screen.queryByText('Student ID')).toBeNull();
+  });
+
   it('renders nothing when student is missing', () => {
     (useStudentDetail as jest.Mock).mockReturnValue({
       data: undefined,

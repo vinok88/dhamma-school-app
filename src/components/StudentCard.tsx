@@ -32,6 +32,11 @@ export function StudentCard({ student, routePrefix = '' }: StudentCardProps) {
         <Text className="text-sm" style={{ color: 'rgba(255,255,255,0.75)' }}>
           {formatAge(student.dob)}{student.className ? ` · ${student.className}` : ''}
         </Text>
+        {student.displayId ? (
+          <Text className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.6)', letterSpacing: 0.5 }}>
+            {student.displayId}
+          </Text>
+        ) : null}
       </View>
       {/* Status badge — outlined white on amber */}
       <View
