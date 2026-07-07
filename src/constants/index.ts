@@ -15,6 +15,7 @@ export const TABLES = {
   NOTIFICATIONS: 'notifications',
   STUDENT_PARENTS: 'student_parents',
   TEACHER_INVITATIONS: 'teacher_invitations',
+  POLICIES: 'policies',
 } as const;
 
 // Supabase storage buckets
@@ -40,6 +41,31 @@ export const COLORS = {
   textMuted: '#8B7D6B',
   divider: '#EDE8E0',
 } as const;
+
+// Photo consent policy shown during registration. The text is displayed in-app
+// via a modal (nothing is hosted externally). If the school later publishes a
+// canonical copy (e.g. a public Google Drive link), set PHOTO_CONSENT_POLICY_URL
+// and an "Open full policy" button appears automatically.
+export const PHOTO_CONSENT_POLICY_TITLE = 'Photo Publish Consent';
+// Offline fallback only. The live document URL comes from policies.url in the DB
+// (typically a file in the public `policies` storage bucket). Leave empty here.
+export const PHOTO_CONSENT_POLICY_URL = '';
+// TODO: replace this placeholder with the monastery's official consent wording.
+export const PHOTO_CONSENT_POLICY_BODY =
+  `By granting photo publish consent, you allow Mahamevnawa Dhamma School (Southbank) ` +
+  `to photograph or video your child during school sessions, events, and activities, ` +
+  `and to use those images for the purposes described below.\n\n` +
+  `How images may be used:\n` +
+  `• Internal records and class galleries shared with parents/guardians.\n` +
+  `• School newsletters, notice boards, and event recaps.\n` +
+  `• The school's official social media and website.\n\n` +
+  `Your choices:\n` +
+  `• Consent is entirely optional and does not affect your child's enrolment.\n` +
+  `• You may withdraw or change your consent at any time by contacting the school ` +
+  `or updating your child's profile in this app.\n` +
+  `• Images will not be sold or shared with third parties for commercial purposes.\n\n` +
+  `If you do not grant consent, your child's photo will still be stored for ` +
+  `attendance and identification but will not be published in any of the above.`;
 
 // App config
 export const PAGE_SIZE = 20;

@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
+import { PhotoConsentPolicyLink } from '@/components/ui/PhotoConsentPolicy';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { COLORS } from '@/constants';
 import { showFriendlyError } from '@/utils/errors';
@@ -211,6 +212,7 @@ export default function StudentEditScreen() {
                 <Switch value={field.value} onValueChange={field.onChange} trackColor={{ true: COLORS.primary }} />
               )} />
             </View>
+            <PhotoConsentPolicyLink />
           </View>
 
           <Button

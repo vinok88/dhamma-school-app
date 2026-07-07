@@ -23,6 +23,7 @@ import { PhoneInput } from '@/components/ui/PhoneInput';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
+import { PhotoConsentPolicyLink } from '@/components/ui/PhotoConsentPolicy';
 import { addStudentSchema } from '@/utils/schemas';
 import { calculateAge } from '@/utils/date';
 import { COLORS } from '@/constants';
@@ -252,6 +253,7 @@ export default function AddStudentScreen() {
                 <Switch value={field.value} onValueChange={field.onChange} trackColor={{ true: COLORS.primary }} />
               )} />
             </View>
+            <PhotoConsentPolicyLink />
           </View>
 
           <Text className="text-xs tracking-widest uppercase mt-2 mb-2" style={{ color: COLORS.textMuted }}>
