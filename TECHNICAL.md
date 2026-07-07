@@ -181,7 +181,7 @@ Brand colours:
 
 ## Security
 
-- **Row Level Security (RLS)** enforced at the database level — see `supabase/migrations/010_rls_policies.sql`
+- **Row Level Security (RLS)** enforced at the database level — see `supabase/migrations/016_rls_policies.sql`
 - Session tokens stored in **Expo SecureStore** (encrypted on-device)
 - No sensitive data in `.env` committed to version control
 - Image access via **signed URLs** (1-hour expiry) from Supabase Storage

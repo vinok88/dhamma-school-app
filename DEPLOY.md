@@ -39,23 +39,33 @@ The Dhamma School app is a **React Native (Expo)** mobile application targeting 
 Once your project is ready:
 
 1. In the left sidebar, click **"SQL Editor"**
-2. Open each migration file from your repo locally, paste its contents into the SQL editor, then click **"Run"** — in this exact order:
-   - `supabase/migrations/001_create_schools.sql`
-   - `supabase/migrations/002_create_users.sql`
-   - `supabase/migrations/003_create_students.sql`
-   - `supabase/migrations/004_create_classes.sql`
-   - `supabase/migrations/005_create_attendance.sql`
-   - `supabase/migrations/006_create_announcements.sql`
-   - `supabase/migrations/007_create_events.sql`
-   - `supabase/migrations/008_create_messages.sql`
-   - `supabase/migrations/009_create_notifications.sql`
-   - `supabase/migrations/010_rls_policies.sql`
-   - `supabase/migrations/011_storage_policies.sql`
-   - `supabase/migrations/012_fix_rls_student_insert.sql`
-   - `supabase/migrations/013_fix_rls_admin_profile_update.sql`
-   - `supabase/migrations/014_constraints_and_audit.sql` ← **run this last**
+2. Open each migration file from `supabase/migrations/` locally, paste its contents into the SQL editor, then click **"Run"** — in filename order:
+   - `001_schools.sql`
+   - `002_users.sql`
+   - `003_classes.sql`
+   - `004_students.sql`
+   - `005_student_parents.sql`
+   - `006_teacher_invitations.sql`
+   - `007_attendance.sql`
+   - `008_announcements.sql`
+   - `009_events.sql`
+   - `010_messages.sql`
+   - `011_notifications.sql`
+   - `012_audit.sql`
+   - `013_role_rpcs_and_triggers.sql`
+   - `014_announcement_view_stats.sql`
+   - `015_storage.sql`
+   - `016_rls_policies.sql`
+   - `017_request_add_student.sql`
+   - `018_student_display_id.sql`
+   - `019_link_student_by_code.sql`
+   - `020_student_decision.sql`
+   - `021_policies.sql`
+   - `022_policies_storage.sql` ← **run this last**
 
-> ⚠️ Order matters — each migration may depend on the previous one.
+> ⚠️ Order matters — each migration builds on the previous ones, so run them in filename order.
+>
+> ⛔ **`000_reset.sql` is destructive** — it drops every table, function, and storage bucket and wipes `auth.users`. **Skip it on a fresh project.** Only run it to wipe a stale database before re-applying `001`–`022`.
 
 ### 1.3 — Enable Realtime for live data sync
 
@@ -76,13 +86,16 @@ The app uses Supabase Realtime to push DB changes to connected clients instantly
 2. Enable **Google** — you will fill in the Client ID & Secret in Step 3
 3. Enable **Apple** — requires your Apple Developer account (can be done later)
 
-### 1.4 — Create Storage buckets
+### 1.5 — Storage buckets
 
-1. Go to **Storage** in the left sidebar
-2. Click **"New bucket"**, name it `student-photos`, set it to **Private**
-3. Repeat and create `profile-photos`, also set to **Private**
+The storage buckets are created automatically by the migrations — no manual creation needed:
 
-### 1.5 — Copy your credentials
+- `student-photos` (private) and `profile-photos` (private) — from `015_storage.sql`
+- `policies` (public — holds the Photo/Video policy document) — from `022_policies_storage.sql`
+
+Go to **Storage** in the left sidebar and confirm all three buckets exist after running the migrations.
+
+### 1.6 — Copy your credentials
 
 1. Go to **Project Settings → API** (gear icon at the bottom of the sidebar)
 2. Copy and save these two values — you'll need them in Step 4:
@@ -91,14 +104,56 @@ The app uses Supabase Realtime to push DB changes to connected clients instantly
 
 > The `service_role` key is also on this page. Keep it safe — it bypasses all Row Level Security and should never be committed or exposed publicly.
 
-### 1.6 — Seed the initial school record
+### 1.7 — Confirm / rename the school record
 
-In the **SQL Editor**, run:
+`001_schools.sql` already inserts a default school when the migrations run, so you
+usually don't need to add one. In the **SQL Editor**, check what exists:
 
 ```sql
-INSERT INTO schools (name, location)
-VALUES ('Mahamevnawa Dhamma School', 'Melbourne, VIC, Australia');
+SELECT id, name, location FROM schools;
 ```
+
+To rename it to this deployment's school:
+
+```sql
+UPDATE schools
+SET name = 'Mahamevnawa Dhamma School', location = 'Melbourne, VIC, Australia';
+```
+
+> Only run an `INSERT INTO schools (...)` if the table is empty — inserting when a
+> default row already exists creates a **duplicate** school.
+
+### 1.8 — Upload the Photo/Video policy document
+
+During child registration the app shows a **"Photo/Video policy"** link that opens a
+hosted document. The document lives in the public **`policies`** storage bucket
+(created automatically by migration `022_policies_storage.sql`) and its URL is stored
+in the `policies` table (seeded by `021_policies.sql`).
+
+> The link only appears in the app **once `policies.url` points at a real file** — so
+> this step is required for it to show. Nothing is bundled in the app; changing the
+> policy later never needs an app release.
+
+1. Prepare the policy as a **PDF or HTML** file (e.g. `photo-consent.pdf`).
+2. Go to **Storage → `policies`** in the Supabase dashboard and **upload** the file.
+   (The bucket is public read / admin-write; the dashboard uploads with the
+   `service_role`, so no extra permission setup is needed.)
+3. Copy its public URL — the pattern is:
+   ```
+   https://<your-project-ref>.supabase.co/storage/v1/object/public/policies/photo-consent.pdf
+   ```
+   (Or use the **"Get URL / Copy URL"** action on the file in the Storage UI.)
+4. Point the policy row at it in the **SQL Editor**:
+   ```sql
+   UPDATE policies
+   SET url = 'https://<your-project-ref>.supabase.co/storage/v1/object/public/policies/photo-consent.pdf'
+   WHERE key = 'photo_consent';
+   ```
+
+**To update the policy later:** re-upload a new file with the **same name** (or upload a
+new file and update `url` with the SQL above). The app fetches and caches the URL for a
+week, so users pick up changes within a week — or immediately on a fresh install /
+cache clear.
 
 ---
 
@@ -671,11 +726,13 @@ eas submit --platform ios
 ## Pre-launch Checklist
 
 ### Database
-- [ ] All migrations run on Supabase in order (`001` → `014`)
-- [ ] Supabase RLS policies verified (`010_rls_policies.sql`)
+- [ ] All migrations run on Supabase in order (`001` → `022`; skip the destructive `000_reset.sql` on a fresh project)
+- [ ] Supabase RLS policies verified (`016_rls_policies.sql`)
+- [ ] Storage buckets present: `student-photos`, `profile-photos`, `policies` (created by `015`/`022`)
 - [ ] Realtime enabled for `students`, `announcements`, `notifications`, `user_profiles` (Dashboard → Database → Replication)
-- [ ] Default school record seeded (see migration 001)
+- [ ] School record confirmed (default seeded by migration `001` — verify/rename, don't duplicate)
 - [ ] First admin account seeded via SQL (see Database Seeding section)
+- [ ] Photo/Video policy document uploaded to the `policies` bucket and `policies.url` set (see §1.8)
 
 ### Authentication & Sign-In
 - [ ] Google OAuth configured in Supabase + Google Cloud Console (same GCP project as Firebase)
@@ -703,11 +760,12 @@ eas submit --platform ios
 
 ## Database Seeding
 
-After running migrations, seed the initial school record via Supabase SQL editor:
+Migration `001_schools.sql` already inserts a default school, so verify/rename it rather
+than inserting a new one (see §1.7). To rename via the Supabase SQL editor:
 
 ```sql
-INSERT INTO schools (name, location)
-VALUES ('Jethavanaya Dhamma School', 'Melbourne, VIC, Australia');
+UPDATE schools
+SET name = 'Mahamevnawa Dhamma School', location = 'Melbourne, VIC, Australia';
 ```
 
 ### Seed the first admin account

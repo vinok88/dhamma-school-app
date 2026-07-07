@@ -101,7 +101,7 @@ cp .env.example .env
 Fill in your Supabase URL and anon key from the Supabase dashboard.
 
 ### 3. Run database migrations
-In the Supabase SQL editor, run each file in `supabase/migrations/` in order (001 → 010).
+In the Supabase SQL editor, run each file in `supabase/migrations/` in filename order (`001` → `022`). Skip the destructive `000_reset.sql` on a fresh project. See [DEPLOY.md](DEPLOY.md) §1.2 for the full list and notes.
 
 ### 4. Start the app
 ```bash
