@@ -15,7 +15,8 @@ describe('LoginScreen', () => {
 
   it('renders welcome copy and Google button', () => {
     renderScreen(<LoginScreen />);
-    expect(screen.getByText(/Welcome back/)).toBeTruthy();
+    expect(screen.getByText(/නමෝ බුද්ධාය/)).toBeTruthy();
+    expect(screen.getByText(/Sunday School journey/)).toBeTruthy();
     expect(screen.getByText('Continue with Google')).toBeTruthy();
   });
 

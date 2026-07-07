@@ -7,6 +7,7 @@ import { useAuth, AuthProvider } from '@/hooks/useAuth';
 import { AppSplash } from '@/components/ui/AppSplash';
 import { useFonts, DMSerifDisplay_400Regular } from '@expo-google-fonts/dm-serif-display';
 import { WorkSans_400Regular, WorkSans_500Medium, WorkSans_600SemiBold } from '@expo-google-fonts/work-sans';
+import { NotoSerifSinhala_600SemiBold } from '@expo-google-fonts/noto-serif-sinhala';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '@/lib/supabase';
@@ -169,6 +170,7 @@ export default function RootLayout() {
     WorkSans_400Regular,
     WorkSans_500Medium,
     WorkSans_600SemiBold,
+    NotoSerifSinhala_600SemiBold,
   });
 
   useEffect(() => {

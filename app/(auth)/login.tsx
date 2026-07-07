@@ -48,9 +48,9 @@ export default function LoginScreen() {
         <View className="flex-1 px-8 pt-8 pb-8">
           <Text
             className="text-center mb-2"
-            style={{ fontSize: 28, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}
+            style={{ fontSize: 28, fontFamily: 'NotoSerifSinhala_600SemiBold', color: '#1C1C1E' }}
           >
-            Welcome back 🙏
+            නමෝ බුද්ධාය!
           </Text>
           <Text style={{ color: '#8B7D6B', textAlign: 'center', fontSize: 14, marginBottom: 4 }}>
             Sign in to manage your child's
