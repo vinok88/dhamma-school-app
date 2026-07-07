@@ -31,6 +31,7 @@ function mapStudent(d: Record<string, unknown>): StudentModel {
   return {
     id: d.id as string,
     schoolId: d.school_id as string,
+    displayId: d.display_id as string | undefined,
     firstName: d.first_name as string,
     lastName: d.last_name as string,
     preferredName: d.preferred_name as string | undefined,
@@ -188,6 +189,68 @@ export function useCreateStudent() {
   });
 }
 
+export interface RequestAddStudentPayload {
+  firstName: string;
+  lastName: string;
+  preferredName?: string;
+  dob: string;
+  gender: string;
+  address: string;
+  hasAllergies: boolean;
+  allergyNotes?: string;
+  photoPublishConsent: boolean;
+}
+
+// Parent self-service: submit a child for approval. Runs the request_add_student
+// SECURITY DEFINER RPC, which creates a `pending` student, links the requesting
+// parent, and notifies every principal/admin. Returns the new student id.
+export function useRequestAddStudent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: RequestAddStudentPayload) => {
+      const { data, error } = await supabase.rpc('request_add_student', {
+        p_first_name: payload.firstName.trim(),
+        p_last_name: payload.lastName.trim(),
+        p_preferred_name: payload.preferredName?.trim() || null,
+        p_dob: payload.dob,
+        p_gender: payload.gender,
+        p_address: payload.address.trim(),
+        p_has_allergies: payload.hasAllergies,
+        p_allergy_notes: payload.hasAllergies ? (payload.allergyNotes?.trim() || null) : null,
+        p_photo_publish_consent: payload.photoPublishConsent,
+      });
+      if (error) throw error;
+      return data as string; // new student id
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['students'] }),
+  });
+}
+
+export interface LinkStudentByCodePayload {
+  displayId: string;
+  verifyLastName: string;
+  verifyDob: string; // ISO yyyy-MM-dd
+}
+
+// Parent self-service: link to an existing child using its readable Student ID
+// plus a verification factor (last name + DOB). Runs the link_student_by_code
+// SECURITY DEFINER RPC. Returns the linked student id.
+export function useLinkStudentByCode() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: LinkStudentByCodePayload) => {
+      const { data, error } = await supabase.rpc('link_student_by_code', {
+        p_display_id: payload.displayId.trim(),
+        p_verify_last_name: payload.verifyLastName.trim(),
+        p_verify_dob: payload.verifyDob,
+      });
+      if (error) throw error;
+      return data as string; // linked student id
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['students'] }),
+  });
+}
+
 export function useUpdateStudentPhoto() {
   const qc = useQueryClient();
   return useMutation({
@@ -298,6 +361,55 @@ export function useAdminUpdateStudent() {
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['students'] }),
+  });
+}
+
+// Principal/admin: approve a pending student — assigns a class, activates, and
+// notifies linked parents. Runs the approve_student SECURITY DEFINER RPC.
+export function useApproveStudent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ studentId, classId }: { studentId: string; classId: string }) => {
+      const { error } = await supabase.rpc('approve_student', {
+        p_student_id: studentId,
+        p_class_id: classId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['students'] }),
+  });
+}
+
+// Principal/admin: reject a pending student with a reason, notifying parents.
+export function useRejectStudent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ studentId, reason }: { studentId: string; reason: string }) => {
+      const { error } = await supabase.rpc('reject_student', {
+        p_student_id: studentId,
+        p_reason: reason,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['students'] }),
+  });
+}
+
+// Lightweight count of pending registrations — drives the Students tab badge.
+export function usePendingStudentsCount(schoolId: string) {
+  return useQuery({
+    queryKey: ['students', 'pending-count', schoolId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from(TABLES.STUDENTS)
+        .select('id', { count: 'exact', head: true })
+        .eq('school_id', schoolId)
+        .eq('status', 'pending');
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: !!schoolId,
+    refetchInterval: 30_000,
   });
 }
 

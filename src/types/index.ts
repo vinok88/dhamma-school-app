@@ -35,6 +35,8 @@ export interface UserModel {
 export interface StudentModel {
   id: string;
   schoolId: string;
+  /** Human-readable ID (e.g. SUN-00042), assigned once active/approved. */
+  displayId?: string;
   firstName: string;
   lastName: string;
   preferredName?: string;

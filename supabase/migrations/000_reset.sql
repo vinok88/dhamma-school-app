@@ -8,6 +8,8 @@
 -- Drop application tables (CASCADE handles FKs and policies)
 -- ============================================================
 DROP TABLE IF EXISTS audit_logs            CASCADE;
+DROP TABLE IF EXISTS policies              CASCADE;
+DROP TABLE IF EXISTS student_link_attempts CASCADE;
 DROP TABLE IF EXISTS notifications         CASCADE;
 DROP TABLE IF EXISTS messages              CASCADE;
 DROP TABLE IF EXISTS events                CASCADE;
@@ -23,6 +25,12 @@ DROP TABLE IF EXISTS schools               CASCADE;
 -- ============================================================
 -- Drop functions
 -- ============================================================
+DROP FUNCTION IF EXISTS request_add_student(TEXT,TEXT,TEXT,DATE,TEXT,TEXT,BOOLEAN,TEXT,BOOLEAN) CASCADE;
+DROP FUNCTION IF EXISTS link_student_by_code(TEXT,TEXT,DATE)         CASCADE;
+DROP FUNCTION IF EXISTS approve_student(UUID,UUID)                   CASCADE;
+DROP FUNCTION IF EXISTS reject_student(UUID,TEXT)                    CASCADE;
+DROP FUNCTION IF EXISTS gen_student_display_id(UUID)                 CASCADE;
+DROP FUNCTION IF EXISTS assign_student_display_id()                  CASCADE;
 DROP FUNCTION IF EXISTS resolve_user_role_for_signup(TEXT)         CASCADE;
 DROP FUNCTION IF EXISTS refresh_my_role()                          CASCADE;
 DROP FUNCTION IF EXISTS upgrade_guest_on_student_parent_insert()   CASCADE;
@@ -58,13 +66,15 @@ DO $$ BEGIN
   EXECUTE 'DROP POLICY IF EXISTS "Profile photos: own upload" ON storage.objects';
   EXECUTE 'DROP POLICY IF EXISTS "Profile photos: own update" ON storage.objects';
   EXECUTE 'DROP POLICY IF EXISTS "Profile photos: authenticated read" ON storage.objects';
+  EXECUTE 'DROP POLICY IF EXISTS "Policy docs: public read" ON storage.objects';
+  EXECUTE 'DROP POLICY IF EXISTS "Policy docs: admin write" ON storage.objects';
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 -- Empty buckets and remove them. Skip silently if buckets don't exist.
 DO $$ BEGIN
-  DELETE FROM storage.objects WHERE bucket_id IN ('student-photos', 'profile-photos');
-  DELETE FROM storage.buckets WHERE id IN ('student-photos', 'profile-photos');
+  DELETE FROM storage.objects WHERE bucket_id IN ('student-photos', 'profile-photos', 'policies');
+  DELETE FROM storage.buckets WHERE id IN ('student-photos', 'profile-photos', 'policies');
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 

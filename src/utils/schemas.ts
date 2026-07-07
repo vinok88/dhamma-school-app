@@ -37,6 +37,27 @@ export const addStudentSchema = z.object({
   ).min(1, 'At least one Parent/Guardian is required'),
 });
 
+// Parent self-service "add my child" — no class or parent block (the requesting
+// parent is linked automatically; the class is assigned by the principal on approval).
+export const requestChildSchema = z.object({
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  preferredName: z.string().optional(),
+  dob: z.string().min(1, 'Date of birth is required'),
+  gender: z.enum(['male', 'female', 'other'], { required_error: 'Gender is required' }),
+  address: z.string().min(5, 'Address is required'),
+  hasAllergies: z.boolean(),
+  allergyNotes: z.string().optional(),
+  photoPublishConsent: z.boolean(),
+});
+
+// Parent self-service "link existing child" — Student ID + verification factor.
+export const linkChildSchema = z.object({
+  displayId: z.string().min(3, 'Student ID is required'),
+  verifyLastName: z.string().min(1, "Child's last name is required"),
+  verifyDob: z.string().min(1, "Child's date of birth is required"),
+});
+
 export const addTeacherSchema = z.object({
   fullName: z.string().min(2, 'Full name is required'),
   email: z.string().email('Invalid email'),

@@ -9,6 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useForm, Controller } from 'react-hook-form';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,6 +24,7 @@ import { showFriendlyError } from '@/utils/errors';
 import { SwitchProfile } from '@/components/ui/SwitchProfile';
 
 export default function ParentProfile() {
+  const router = useRouter();
   const { profile, signOut, refreshProfile } = useAuth();
   const updateProfile = useUpdateProfile();
   const uploadPhoto = useUploadProfilePhoto();
@@ -119,6 +121,22 @@ export default function ParentProfile() {
                 </TouchableOpacity>
               </View>
             )}
+          </Card>
+
+          {/* Add a child — submits a registration for principal approval */}
+          <Card className="mb-4">
+            <View className="flex-row items-center mb-1">
+              <Text className="text-base mr-2">👶</Text>
+              <Text className="font-sans-semibold text-text-primary">My Children</Text>
+            </View>
+            <Text className="text-xs text-text-muted mb-3">
+              Add a child to send a registration request to the school principal for approval.
+            </Text>
+            <Button
+              label="+ Add a Child"
+              onPress={() => router.push('/(parent)/add-child' as never)}
+              fullWidth
+            />
           </Card>
 
           <SwitchProfile />

@@ -4,8 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Build a chainable Supabase query mock. Each terminal call (single, order, in)
 // resolves to { data, error }. Tests assign mockRowFixture before invoking the hook.
-let mockRowFixture: { data: unknown; error: unknown } = { data: [], error: null };
+let mockRowFixture: { data?: unknown; error: unknown; count?: number } = { data: [], error: null };
 let mockLinkFixture: { data: unknown; error: unknown } = { data: [], error: null };
+let mockRpcFixture: { data: unknown; error: unknown } = { data: null, error: null };
 
 const mockChain: Record<string, jest.Mock> = {};
 const mockMakeChain = (resolver: () => Promise<unknown>) => {
@@ -29,10 +30,16 @@ jest.mock('@/lib/supabase', () => ({
         Promise.resolve(table === 'student_parents' ? mockLinkFixture : mockRowFixture)
       );
     }),
+    rpc: jest.fn((_fn: string, _args: unknown) => Promise.resolve(mockRpcFixture)),
   },
 }));
 
-import { useMyStudents } from '../useStudents';
+import {
+  useMyStudents,
+  useRequestAddStudent,
+  useLinkStudentByCode,
+  usePendingStudentsCount,
+} from '../useStudents';
 import { supabase } from '@/lib/supabase';
 
 function wrapper({ children }: { children: React.ReactNode }) {
@@ -109,6 +116,110 @@ describe('useMyStudents', () => {
 
   it('does not run when userId is empty', () => {
     const { result } = renderHook(() => useMyStudents(''), { wrapper });
+    expect(result.current.fetchStatus).toBe('idle');
+  });
+
+  it('maps display_id onto the model', async () => {
+    mockLinkFixture = { data: [{ student_id: 's1' }], error: null };
+    mockRowFixture = {
+      data: [{
+        id: 's1', school_id: 'school-1', display_id: 'SUN-00042',
+        first_name: 'Anna', last_name: 'Perera', dob: '2018-04-01', gender: 'F',
+        has_allergies: false, photo_publish_consent: false, status: 'active',
+        student_parents: [], created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z',
+      }],
+      error: null,
+    };
+    const { result } = renderHook(() => useMyStudents('p1'), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.[0].displayId).toBe('SUN-00042');
+  });
+});
+
+describe('useRequestAddStudent', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockRpcFixture = { data: 'new-student-id', error: null };
+  });
+
+  it('calls the request_add_student RPC with mapped params and returns the new id', async () => {
+    const { result } = renderHook(() => useRequestAddStudent(), { wrapper });
+
+    const id = await result.current.mutateAsync({
+      firstName: '  Anna ', lastName: ' Perera ', preferredName: '  ', dob: '2018-04-01',
+      gender: 'female', address: ' 1 Test St ', hasAllergies: false, allergyNotes: 'ignored',
+      photoPublishConsent: true,
+    });
+
+    expect(id).toBe('new-student-id');
+    expect(supabase.rpc).toHaveBeenCalledWith('request_add_student', {
+      p_first_name: 'Anna',
+      p_last_name: 'Perera',
+      p_preferred_name: null,
+      p_dob: '2018-04-01',
+      p_gender: 'female',
+      p_address: '1 Test St',
+      p_has_allergies: false,
+      p_allergy_notes: null, // dropped because hasAllergies is false
+      p_photo_publish_consent: true,
+    });
+  });
+
+  it('throws when the RPC returns an error', async () => {
+    mockRpcFixture = { data: null, error: { message: 'nope' } };
+    const { result } = renderHook(() => useRequestAddStudent(), { wrapper });
+    await expect(
+      result.current.mutateAsync({
+        firstName: 'A', lastName: 'B', dob: '2018-04-01', gender: 'male',
+        address: '1 St', hasAllergies: false, photoPublishConsent: false,
+      }),
+    ).rejects.toBeTruthy();
+  });
+});
+
+describe('useLinkStudentByCode', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockRpcFixture = { data: 'linked-student-id', error: null };
+  });
+
+  it('calls the link_student_by_code RPC with trimmed params', async () => {
+    const { result } = renderHook(() => useLinkStudentByCode(), { wrapper });
+
+    const id = await result.current.mutateAsync({
+      displayId: '  sun-00042 ', verifyLastName: ' Perera ', verifyDob: '2018-04-01',
+    });
+
+    expect(id).toBe('linked-student-id');
+    expect(supabase.rpc).toHaveBeenCalledWith('link_student_by_code', {
+      p_display_id: 'sun-00042',
+      p_verify_last_name: 'Perera',
+      p_verify_dob: '2018-04-01',
+    });
+  });
+
+  it('propagates a verification failure from the RPC', async () => {
+    mockRpcFixture = { data: null, error: { message: 'No matching student found' } };
+    const { result } = renderHook(() => useLinkStudentByCode(), { wrapper });
+    await expect(
+      result.current.mutateAsync({ displayId: 'SUN-00042', verifyLastName: 'X', verifyDob: '2010-01-01' }),
+    ).rejects.toBeTruthy();
+  });
+});
+
+describe('usePendingStudentsCount', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('returns the pending-registration count for the school', async () => {
+    mockRowFixture = { count: 3, error: null };
+    const { result } = renderHook(() => usePendingStudentsCount('school-1'), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(supabase.from).toHaveBeenCalledWith('students');
+    expect(result.current.data).toBe(3);
+  });
+
+  it('does not run without a schoolId', () => {
+    const { result } = renderHook(() => usePendingStudentsCount(''), { wrapper });
     expect(result.current.fetchStatus).toBe('idle');
   });
 });

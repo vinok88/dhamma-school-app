@@ -41,4 +41,18 @@ describe('Admin StudentsScreen', () => {
     expect(screen.getByText('Anna Smith')).toBeTruthy();
     expect(screen.queryByText('Ben Jones')).toBeNull();
   });
+
+  it('shows a Review action for pending (parent-submitted) registrations', () => {
+    (useAllStudents as jest.Mock).mockReturnValue(
+      queryOk([
+        makeStudent({
+          id: 'p1', firstName: 'Pending', lastName: 'Kid',
+          status: 'pending', classId: undefined, className: undefined,
+        }),
+      ]),
+    );
+    renderScreen(<StudentsScreen />);
+    expect(screen.getByText('Pending Kid')).toBeTruthy();
+    expect(screen.getByText('Review')).toBeTruthy();
+  });
 });

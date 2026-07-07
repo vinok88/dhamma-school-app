@@ -10,7 +10,7 @@ import { UserModel, StudentModel, StudentStatus } from '@/types';
 import { formatDate, formatAge } from '@/utils/date';
 import { useAuth } from '@/hooks/useAuth';
 import { useClasses } from '@/hooks/useClasses';
-import { useAdminUpdateStudent } from '@/hooks/useStudents';
+import { useAdminUpdateStudent, useApproveStudent, useRejectStudent } from '@/hooks/useStudents';
 import { showFriendlyError } from '@/utils/errors';
 
 interface UserDetailModalProps {
@@ -130,16 +130,59 @@ export function UserDetailModal({ visible, onClose, user, student, studentPhotoU
 
   const { data: classes } = useClasses(student?.schoolId ?? '');
   const adminUpdate = useAdminUpdateStudent();
+  const approveStudent = useApproveStudent();
+  const rejectStudent = useRejectStudent();
+
+  const isPending = !!(student && student.status === 'pending');
 
   const [editMode, setEditMode] = useState(false);
   const initial = useMemo(() => (student ? studentToDraft(student) : null), [student?.id, student?.updatedAt]);
   const [draft, setDraft] = useState<StudentDraft | null>(initial);
 
-  // Reset draft whenever the underlying student changes or modal closes.
+  // Approval panel (pending students): chosen class + reject reason.
+  const [approveClassId, setApproveClassId] = useState('');
+  const [showReject, setShowReject] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+
+  // Reset draft + approval state whenever the underlying student changes or modal closes.
   useEffect(() => {
     setDraft(initial);
     setEditMode(false);
+    setApproveClassId('');
+    setShowReject(false);
+    setRejectReason('');
   }, [initial?.firstName, initial?.lastName, initial?.dob, student?.id, visible]);
+
+  async function handleApprove() {
+    if (!student) return;
+    if (!approveClassId) {
+      Alert.alert('Class required', 'Select a class to assign before approving.');
+      return;
+    }
+    try {
+      // RPC assigns the class, activates the student, and notifies the parents.
+      await approveStudent.mutateAsync({ studentId: student.id, classId: approveClassId });
+      Alert.alert('Approved', `${student.firstName} has been approved and the parents notified.`);
+      onClose();
+    } catch (e: unknown) {
+      showFriendlyError("Couldn't approve student", e, 'student-approve');
+    }
+  }
+
+  async function handleReject() {
+    if (!student) return;
+    if (!rejectReason.trim()) {
+      Alert.alert('Reason required', 'Add a short reason so the parent knows why.');
+      return;
+    }
+    try {
+      await rejectStudent.mutateAsync({ studentId: student.id, reason: rejectReason.trim() });
+      Alert.alert('Rejected', 'The registration has been rejected and the parents notified.');
+      onClose();
+    } catch (e: unknown) {
+      showFriendlyError("Couldn't reject student", e, 'student-reject');
+    }
+  }
 
   const dirty = !!(draft && initial && !isDraftEqual(draft, initial));
 
@@ -171,6 +214,11 @@ export function UserDetailModal({ visible, onClose, user, student, studentPhotoU
     // Light validation
     if (!draft.firstName.trim() || !draft.lastName.trim() || !draft.dob.trim()) {
       Alert.alert('Required fields missing', 'First name, last name and DOB are required.');
+      return;
+    }
+    // Active students must be assigned a class (enforced by a DB constraint).
+    if (draft.status === 'active' && !draft.classId) {
+      Alert.alert('Class required', 'Assign a class before setting this student to active.');
       return;
     }
     const cleanParents = draft.parents
@@ -265,9 +313,100 @@ export function UserDetailModal({ visible, onClose, user, student, studentPhotoU
                 </>
               )}
 
+              {/* Approval panel — pending students, principal/admin only */}
+              {canEdit && isStudent && student && isPending && !editMode && (
+                <View className="rounded-2xl p-4 mb-4" style={{ backgroundColor: '#FEF3C7' }}>
+                  <Text className="font-sans-semibold mb-1" style={{ color: COLORS.brown }}>
+                    Pending approval
+                  </Text>
+                  <Text className="text-xs mb-3" style={{ color: COLORS.brown }}>
+                    Assign a class and approve, or reject with a reason for the parent.
+                  </Text>
+
+                  {(classes ?? []).length === 0 ? (
+                    <Text className="text-xs mb-3" style={{ color: COLORS.error }}>
+                      No classes exist yet — create one first, then approve.
+                    </Text>
+                  ) : (
+                    <View className="flex-row flex-wrap gap-2 mb-3">
+                      {(classes ?? []).map((c) => {
+                        const active = approveClassId === c.id;
+                        return (
+                          <TouchableOpacity
+                            key={c.id}
+                            onPress={() => setApproveClassId(c.id)}
+                            className={`px-3 py-1.5 rounded-full ${active ? 'bg-primary' : 'bg-white'}`}
+                          >
+                            <Text className={`text-xs font-sans-semibold ${active ? 'text-white' : 'text-text-muted'}`}>
+                              {c.name}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+
+                  {!showReject ? (
+                    <View className="flex-row gap-2">
+                      <TouchableOpacity
+                        onPress={() => setShowReject(true)}
+                        className="flex-1 rounded-xl py-3 items-center bg-white"
+                        style={{ borderWidth: 1, borderColor: COLORS.error }}
+                      >
+                        <Text className="text-sm font-sans-semibold" style={{ color: COLORS.error }}>
+                          Reject
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={handleApprove}
+                        disabled={approveStudent.isPending || !approveClassId}
+                        className="flex-1 rounded-xl py-3 items-center"
+                        style={{
+                          backgroundColor: COLORS.success,
+                          opacity: approveStudent.isPending || !approveClassId ? 0.5 : 1,
+                        }}
+                      >
+                        <Text className="text-sm font-sans-semibold text-white">
+                          {approveStudent.isPending ? 'Approving…' : 'Approve & Assign'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View>
+                      <TextInput
+                        value={rejectReason}
+                        onChangeText={setRejectReason}
+                        placeholder="Reason for rejection…"
+                        multiline
+                        className="text-sm text-text-primary bg-white rounded-lg px-3 py-2 mb-2"
+                      />
+                      <View className="flex-row gap-2">
+                        <TouchableOpacity
+                          onPress={() => { setShowReject(false); setRejectReason(''); }}
+                          className="flex-1 rounded-xl py-3 items-center bg-white"
+                        >
+                          <Text className="text-sm font-sans-semibold text-text-muted">Cancel</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={handleReject}
+                          disabled={rejectStudent.isPending}
+                          className="flex-1 rounded-xl py-3 items-center"
+                          style={{ backgroundColor: COLORS.error, opacity: rejectStudent.isPending ? 0.7 : 1 }}
+                        >
+                          <Text className="text-sm font-sans-semibold text-white">
+                            {rejectStudent.isPending ? 'Rejecting…' : 'Confirm Reject'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              )}
+
               {/* Student VIEW mode */}
               {isStudent && student && !editMode && (
                 <>
+                  <DetailRow label="Student ID" value={student.displayId ?? 'Assigned on approval'} />
                   {student.preferredName && (
                     <DetailRow label="Nickname" value={student.preferredName} />
                   )}
@@ -362,7 +501,9 @@ export function UserDetailModal({ visible, onClose, user, student, studentPhotoU
                   <View className="py-2 border-b border-gray-100">
                     <Text className="text-xs text-text-muted mb-1">Status</Text>
                     <View className="flex-row gap-2">
-                      {(['active', 'inactive'] as const).map((s) => {
+                      {((draft.status === 'pending'
+                        ? ['pending', 'active', 'inactive']
+                        : ['active', 'inactive']) as StudentStatus[]).map((s) => {
                         const active = draft.status === s;
                         return (
                           <TouchableOpacity

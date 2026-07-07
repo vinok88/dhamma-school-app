@@ -1,12 +1,17 @@
 import { Tabs } from 'expo-router';
 import { COLORS } from '@/constants';
 import { Text } from 'react-native';
+import { useAuth } from '@/hooks/useAuth';
+import { usePendingStudentsCount } from '@/hooks/useStudents';
 
 function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
   return <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>{emoji}</Text>;
 }
 
 export default function AdminLayout() {
+  const { profile } = useAuth();
+  const { data: pendingCount } = usePendingStudentsCount(profile?.schoolId ?? '');
+
   return (
     <Tabs
       screenOptions={{
@@ -24,7 +29,16 @@ export default function AdminLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Dashboard', tabBarIcon: ({ focused }) => <TabIcon emoji="📊" focused={focused} /> }} />
-      <Tabs.Screen name="students" options={{ title: 'Students', tabBarIcon: ({ focused }) => <TabIcon emoji="🎒" focused={focused} /> }} />
+      <Tabs.Screen
+        name="students"
+        options={{
+          title: 'Students',
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🎒" focused={focused} />,
+          // Red badge with the pending-registration count, if any.
+          tabBarBadge: pendingCount && pendingCount > 0 ? pendingCount : undefined,
+          tabBarBadgeStyle: { backgroundColor: COLORS.error, color: COLORS.white, fontSize: 10 },
+        }}
+      />
       <Tabs.Screen name="classes" options={{ title: 'Classes', tabBarIcon: ({ focused }) => <TabIcon emoji="🏫" focused={focused} /> }} />
       <Tabs.Screen name="more" options={{ title: 'More', tabBarIcon: ({ focused }) => <TabIcon emoji="⋯" focused={focused} /> }} />
       {/* Hidden */}

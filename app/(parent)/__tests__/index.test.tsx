@@ -35,10 +35,11 @@ import { useMyStudents } from '@/hooks/useStudents';
 describe('ParentHome', () => {
   beforeEach(() => mockPush.mockClear());
 
-  it('shows empty state when no children linked', () => {
+  it('shows empty state with add-child CTA when no children linked', () => {
     (useMyStudents as jest.Mock).mockReturnValue({ ...queryOk([]), refetch: jest.fn() });
     renderScreen(<ParentHome />);
-    expect(screen.getByText(/No children linked yet/)).toBeTruthy();
+    expect(screen.getByText(/No children added yet/)).toBeTruthy();
+    expect(screen.getByText(/\+ Add a Child/)).toBeTruthy();
   });
 
   it('lists children', () => {

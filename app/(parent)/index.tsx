@@ -10,6 +10,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { StudentCard } from '@/components/StudentCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Button } from '@/components/ui/Button';
 import { COLORS } from '@/constants';
 
 export default function ParentHome() {
@@ -111,15 +112,35 @@ export default function ParentHome() {
         {isLoading ? (
           <LoadingSpinner label="Loading students…" />
         ) : !students?.length ? (
-          <EmptyState
-            icon="👶"
-            title="No children linked yet"
-            subtitle="If your child is enrolled, ask the school to add your email to their record, then tap the refresh icon above."
-          />
+          <>
+            <EmptyState
+              icon="👶"
+              title="No children added yet"
+              subtitle="Add your child to send a registration request to the school principal. If your child is already enrolled, tap the refresh icon above to link them."
+            />
+            <View className="mt-2">
+              <Button
+                label="+ Add a Child"
+                onPress={() => router.push('/(parent)/add-child' as never)}
+                fullWidth
+                size="lg"
+              />
+            </View>
+          </>
         ) : (
-          students.map((s) => (
-            <StudentCard key={s.id} student={s} routePrefix="/(parent)" />
-          ))
+          <>
+            {students.map((s) => (
+              <StudentCard key={s.id} student={s} routePrefix="/(parent)" />
+            ))}
+            <View className="mt-1">
+              <Button
+                label="+ Add a Child"
+                variant="outline"
+                onPress={() => router.push('/(parent)/add-child' as never)}
+                fullWidth
+              />
+            </View>
+          </>
         )}
         <View className="h-6" />
       </ScrollView>

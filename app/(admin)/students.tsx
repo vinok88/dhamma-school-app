@@ -13,10 +13,9 @@ import { formatAge } from '@/utils/date';
 import { COLORS } from '@/constants';
 import { StudentModel, StudentStatus } from '@/types';
 
-// Only Active / Inactive are reachable from the UI today, so the filter
-// strip is limited to those plus 'all'. The DB enum keeps the other values
-// for legacy rows / future workflows.
-const STATUS_FILTERS: (StudentStatus | 'all')[] = ['all', 'active', 'inactive'];
+// 'pending' surfaces parent-submitted registrations awaiting approval; tap a row
+// to review and (in the detail modal) assign a class + set the status to active.
+const STATUS_FILTERS: (StudentStatus | 'all')[] = ['all', 'pending', 'active', 'inactive'];
 
 function StudentRow({ student: s, onStatusChange, onPress }: { student: any; onStatusChange: (id: string, status: StudentStatus) => void; onPress: () => void }) {
   const { data: signedPhotoUrl } = useStudentPhotoUrl(s.photoUrl);
@@ -33,15 +32,25 @@ function StudentRow({ student: s, onStatusChange, onPress }: { student: any; onS
         <Text className="text-xs text-text-muted">{formatAge(s.dob)} · {s.className ?? 'Unassigned'}</Text>
         <View className="mt-1"><Badge label="" type="student" status={s.status} /></View>
       </View>
-      <TouchableOpacity
-        onPress={() => {
-          const next: StudentStatus = s.status === 'active' ? 'inactive' : 'active';
-          onStatusChange(s.id, next);
-        }}
-        className="ml-2 p-2"
-      >
-        <Text className="text-xs text-text-muted">⋮</Text>
-      </TouchableOpacity>
+      {s.status === 'pending' ? (
+        <TouchableOpacity
+          onPress={onPress}
+          className="ml-2 px-3 py-1.5 rounded-full"
+          style={{ backgroundColor: COLORS.primary }}
+        >
+          <Text className="text-xs font-sans-semibold text-white">Review</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          onPress={() => {
+            const next: StudentStatus = s.status === 'active' ? 'inactive' : 'active';
+            onStatusChange(s.id, next);
+          }}
+          className="ml-2 p-2"
+        >
+          <Text className="text-xs text-text-muted">⋮</Text>
+        </TouchableOpacity>
+      )}
     </TouchableOpacity>
   );
 }
