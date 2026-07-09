@@ -11,6 +11,8 @@ import { formatDate, formatAge } from '@/utils/date';
 import { useAuth } from '@/hooks/useAuth';
 import { useClasses } from '@/hooks/useClasses';
 import { useAdminUpdateStudent, useApproveStudent, useRejectStudent } from '@/hooks/useStudents';
+import { useApproveTeacher, useRejectTeacher } from '@/hooks/useTeachers';
+import { TeacherDocumentLink } from './TeacherDocuments';
 import { showFriendlyError } from '@/utils/errors';
 
 interface UserDetailModalProps {
@@ -120,7 +122,8 @@ export function UserDetailModal({ visible, onClose, user, student, studentPhotoU
   if (!user && !student) return null;
 
   const { profile } = useAuth();
-  const canEdit = !!(editable && student && (profile?.role === 'admin' || profile?.role === 'principal'));
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'principal';
+  const canEdit = !!(editable && student && isAdmin);
 
   const isStudent = !!student;
   const name = isStudent ? `${student!.firstName} ${student!.lastName}` : user!.fullName;
@@ -132,6 +135,30 @@ export function UserDetailModal({ visible, onClose, user, student, studentPhotoU
   const adminUpdate = useAdminUpdateStudent();
   const approveStudent = useApproveStudent();
   const rejectStudent = useRejectStudent();
+  const approveTeacher = useApproveTeacher();
+  const rejectTeacher = useRejectTeacher();
+
+  async function handleApproveTeacher() {
+    if (!user) return;
+    try {
+      await approveTeacher.mutateAsync(user.id);
+      Alert.alert('Approved', `${user.fullName} is now an active teacher.`);
+      onClose();
+    } catch (e: unknown) {
+      showFriendlyError("Couldn't approve teacher", e, 'teacher-approve');
+    }
+  }
+
+  async function handleRejectTeacher() {
+    if (!user) return;
+    try {
+      await rejectTeacher.mutateAsync(user.id);
+      Alert.alert('Rejected', 'The teacher registration was not approved.');
+      onClose();
+    } catch (e: unknown) {
+      showFriendlyError("Couldn't reject teacher", e, 'teacher-reject');
+    }
+  }
 
   const isPending = !!(student && student.status === 'pending');
 
@@ -310,6 +337,52 @@ export function UserDetailModal({ visible, onClose, user, student, studentPhotoU
                   />
                   <DetailRow label="Address" value={user.address} />
                   <DetailRow label="Status" value={user.status} />
+                </>
+              )}
+
+              {/* Teacher documents + approval — principal/admin viewing a teacher */}
+              {!isStudent && user && user.role === 'teacher' && (
+                <>
+                  <View className="mt-3 mb-1">
+                    <Text className="text-xs font-sans-semibold" style={{ color: COLORS.navy }}>
+                      Documents
+                    </Text>
+                  </View>
+                  <View className="py-1"><TeacherDocumentLink label="View WWCC" path={user.wwccUrl} /></View>
+                  <View className="py-1"><TeacherDocumentLink label="View Resume" path={user.resumeUrl} /></View>
+
+                  {isAdmin && user.status === 'pending' && (
+                    <View className="rounded-2xl p-4 mt-3" style={{ backgroundColor: '#FEF3C7' }}>
+                      <Text className="font-sans-semibold mb-1" style={{ color: COLORS.brown }}>
+                        Pending approval
+                      </Text>
+                      <Text className="text-xs mb-3" style={{ color: COLORS.brown }}>
+                        Review the documents above, then approve or reject this teacher.
+                      </Text>
+                      <View className="flex-row gap-2">
+                        <TouchableOpacity
+                          onPress={handleRejectTeacher}
+                          disabled={rejectTeacher.isPending}
+                          className="flex-1 rounded-xl py-3 items-center bg-white"
+                          style={{ borderWidth: 1, borderColor: COLORS.error }}
+                        >
+                          <Text className="text-sm font-sans-semibold" style={{ color: COLORS.error }}>
+                            {rejectTeacher.isPending ? 'Rejecting…' : 'Reject'}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={handleApproveTeacher}
+                          disabled={approveTeacher.isPending}
+                          className="flex-1 rounded-xl py-3 items-center"
+                          style={{ backgroundColor: COLORS.success, opacity: approveTeacher.isPending ? 0.7 : 1 }}
+                        >
+                          <Text className="text-sm font-sans-semibold text-white">
+                            {approveTeacher.isPending ? 'Approving…' : 'Approve'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
                 </>
               )}
 

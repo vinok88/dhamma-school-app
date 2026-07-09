@@ -15,6 +15,8 @@ function mapTeacher(d: Record<string, unknown>): UserModel {
     status: d.status as UserModel['status'],
     profilePhotoUrl: d.profile_photo_url as string | undefined,
     fcmToken: d.fcm_token as string | undefined,
+    wwccUrl: d.wwcc_url as string | undefined,
+    resumeUrl: d.resume_url as string | undefined,
     createdAt: d.created_at as string,
     updatedAt: d.updated_at as string,
   };

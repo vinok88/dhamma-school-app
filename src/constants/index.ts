@@ -22,6 +22,7 @@ export const TABLES = {
 export const STORAGE = {
   STUDENT_PHOTOS: 'student-photos',
   PROFILE_PHOTOS: 'profile-photos',
+  TEACHER_DOCUMENTS: 'teacher-documents',
 } as const;
 
 // Colors

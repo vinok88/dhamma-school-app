@@ -54,6 +54,15 @@ jest.mock('@/hooks/useAuth', () => ({
   }),
 }));
 
+// Teacher-document upload + picker pull in @/lib/supabase and native pickers;
+// stub them (this screen only uses them for teacher signups).
+jest.mock('@/hooks/useTeacherDocs', () => ({
+  useUploadTeacherDocument: () => ({ mutateAsync: jest.fn(), isPending: false }),
+}));
+jest.mock('@/components/ui/TeacherDocuments', () => ({
+  TeacherDocumentPicker: () => null,
+}));
+
 // AddressAutocomplete fires a Google Places fetch on render — stub it so the
 // test doesn't make a real network call.
 jest.mock('@/components/ui/AddressAutocomplete', () => {
@@ -171,7 +180,8 @@ describe('CompleteProfileScreen — parent with existing student link', () => {
   });
 
   it('shows the same friendly message if the role resolver itself throws', async () => {
-    mockResolveRole.mockRejectedValueOnce(new Error('rpc unavailable'));
+    // Rejects on both the on-mount role probe and the submit call.
+    mockResolveRole.mockRejectedValue(new Error('rpc unavailable'));
 
     renderScreen(<CompleteProfileScreen />);
     fillForm();

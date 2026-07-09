@@ -27,6 +27,12 @@ jest.mock('@/hooks/useStudents', () => ({
   useMyStudents: () => ({ data: [] }),
 }));
 
+// The teacher documents card pulls in @/lib/supabase via useTeacherDocs; stub it
+// (parents don't render it anyway).
+jest.mock('@/components/ui/TeacherDocuments', () => ({
+  TeacherDocumentsCard: () => null,
+}));
+
 import ParentProfile from '../profile';
 
 describe('Parent ProfileScreen', () => {

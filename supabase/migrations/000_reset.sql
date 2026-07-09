@@ -68,13 +68,17 @@ DO $$ BEGIN
   EXECUTE 'DROP POLICY IF EXISTS "Profile photos: authenticated read" ON storage.objects';
   EXECUTE 'DROP POLICY IF EXISTS "Policy docs: public read" ON storage.objects';
   EXECUTE 'DROP POLICY IF EXISTS "Policy docs: admin write" ON storage.objects';
+  EXECUTE 'DROP POLICY IF EXISTS "Teacher docs: own upload" ON storage.objects';
+  EXECUTE 'DROP POLICY IF EXISTS "Teacher docs: own update" ON storage.objects';
+  EXECUTE 'DROP POLICY IF EXISTS "Teacher docs: own read" ON storage.objects';
+  EXECUTE 'DROP POLICY IF EXISTS "Teacher docs: admin read" ON storage.objects';
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 -- Empty buckets and remove them. Skip silently if buckets don't exist.
 DO $$ BEGIN
-  DELETE FROM storage.objects WHERE bucket_id IN ('student-photos', 'profile-photos', 'policies');
-  DELETE FROM storage.buckets WHERE id IN ('student-photos', 'profile-photos', 'policies');
+  DELETE FROM storage.objects WHERE bucket_id IN ('student-photos', 'profile-photos', 'policies', 'teacher-documents');
+  DELETE FROM storage.buckets WHERE id IN ('student-photos', 'profile-photos', 'policies', 'teacher-documents');
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderScreen } from '@/test-utils/render';
-import { makeStudent, principalProfile, parentProfile } from '@/test-utils/fixtures';
+import { makeStudent, principalProfile, parentProfile, teacherProfile } from '@/test-utils/fixtures';
 
 const mockApprove = jest.fn(async () => undefined);
 const mockReject = jest.fn(async () => undefined);
@@ -22,6 +22,23 @@ jest.mock('@/hooks/useStudents', () => ({
   useApproveStudent: () => ({ mutateAsync: mockApprove, isPending: false }),
   useRejectStudent: () => ({ mutateAsync: mockReject, isPending: false }),
 }));
+
+const mockApproveTeacher = jest.fn(async () => undefined);
+const mockRejectTeacher = jest.fn(async () => undefined);
+jest.mock('@/hooks/useTeachers', () => ({
+  useApproveTeacher: () => ({ mutateAsync: mockApproveTeacher, isPending: false }),
+  useRejectTeacher: () => ({ mutateAsync: mockRejectTeacher, isPending: false }),
+}));
+
+// Stub the teacher-docs component (avoids loading the real Supabase client).
+jest.mock('@/components/ui/TeacherDocuments', () => {
+  const { Text } = require('react-native');
+  return {
+    TeacherDocumentLink: ({ label, path }: { label: string; path?: string }) => (
+      <Text>{path ? label : `${label}: Not provided`}</Text>
+    ),
+  };
+});
 
 // jest.setup.ts globally stubs UserDetailModal to null (so screens can render
 // without it); load the real implementation here to test it directly.
@@ -82,5 +99,39 @@ describe('UserDetailModal — pending approval', () => {
         reason: 'Duplicate registration',
       }),
     );
+  });
+});
+
+describe('UserDetailModal — teacher approval', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockProfile = principalProfile;
+  });
+
+  const pendingTeacher = {
+    ...teacherProfile, status: 'pending' as const, wwccUrl: 't/wwcc.pdf', resumeUrl: undefined,
+  };
+
+  it('shows document links + approve/reject for a pending teacher (principal)', () => {
+    renderScreen(<UserDetailModal visible user={pendingTeacher} onClose={jest.fn()} />);
+    expect(screen.getByText('View WWCC')).toBeTruthy();
+    expect(screen.getByText('View Resume: Not provided')).toBeTruthy();
+    expect(screen.getByText('Approve')).toBeTruthy();
+    expect(screen.getByText('Reject')).toBeTruthy();
+  });
+
+  it('approves the pending teacher', async () => {
+    renderScreen(<UserDetailModal visible user={pendingTeacher} onClose={jest.fn()} />);
+    fireEvent.press(screen.getByText('Approve'));
+    await waitFor(() => expect(mockApproveTeacher).toHaveBeenCalledWith(teacherProfile.id));
+  });
+
+  it('hides approve/reject for an already-active teacher', () => {
+    renderScreen(
+      <UserDetailModal visible user={{ ...teacherProfile, status: 'active' }} onClose={jest.fn()} />,
+    );
+    expect(screen.queryByText('Approve')).toBeNull();
+    // documents section still shows (view-only)
+    expect(screen.getByText('View WWCC: Not provided')).toBeTruthy();
   });
 });

@@ -121,6 +121,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           profilePhotoUrl: signedPhotoUrl,
           fcmToken: data.fcm_token,
           email: authUser?.email,
+          wwccUrl: data.wwcc_url,
+          resumeUrl: data.resume_url,
           createdAt: data.created_at,
           updatedAt: data.updated_at,
         });

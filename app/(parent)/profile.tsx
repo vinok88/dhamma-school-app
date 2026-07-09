@@ -22,10 +22,11 @@ import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 import { ProfileFormData } from '@/types';
 import { showFriendlyError } from '@/utils/errors';
 import { SwitchProfile } from '@/components/ui/SwitchProfile';
+import { TeacherDocumentsCard } from '@/components/ui/TeacherDocuments';
 
 export default function ParentProfile() {
   const router = useRouter();
-  const { profile, signOut, refreshProfile } = useAuth();
+  const { profile, viewMode, signOut, refreshProfile } = useAuth();
   const updateProfile = useUpdateProfile();
   const uploadPhoto = useUploadProfilePhoto();
   const [editing, setEditing] = useState(false);
@@ -123,21 +124,35 @@ export default function ParentProfile() {
             )}
           </Card>
 
-          {/* Add a child — submits a registration for principal approval */}
-          <Card className="mb-4">
-            <View className="flex-row items-center mb-1">
-              <Text className="text-base mr-2">👶</Text>
-              <Text className="font-sans-semibold text-text-primary">My Children</Text>
-            </View>
-            <Text className="text-xs text-text-muted mb-3">
-              Add a child to send a registration request to the school principal for approval.
-            </Text>
-            <Button
-              label="+ Add a Child"
-              onPress={() => router.push('/(parent)/add-child' as never)}
-              fullWidth
+          {/* Add a child — shown in the parent view (a teacher who is also a
+              parent sees this after switching to their parent view). */}
+          {viewMode === 'parent' && (
+            <Card className="mb-4">
+              <View className="flex-row items-center mb-1">
+                <Text className="text-base mr-2">👶</Text>
+                <Text className="font-sans-semibold text-text-primary">My Children</Text>
+              </View>
+              <Text className="text-xs text-text-muted mb-3">
+                Add a child to send a registration request to the school principal for approval.
+              </Text>
+              <Button
+                label="+ Add a Child"
+                onPress={() => router.push('/(parent)/add-child' as never)}
+                fullWidth
+              />
+            </Card>
+          )}
+
+          {/* Teacher documents — WWCC + resume, shown in the teacher view.
+              Uses the actual account (profile), which is the teacher account. */}
+          {viewMode === 'teacher' && profile && (
+            <TeacherDocumentsCard
+              userId={profile.id}
+              wwccPath={profile.wwccUrl}
+              resumePath={profile.resumeUrl}
+              onChange={refreshProfile}
             />
-          </Card>
+          )}
 
           <SwitchProfile />
 

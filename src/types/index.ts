@@ -28,6 +28,9 @@ export interface UserModel {
   profilePhotoUrl?: string;
   fcmToken?: string;
   email?: string;
+  /** Storage paths (teacher-documents bucket) — teachers only. */
+  wwccUrl?: string;
+  resumeUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
