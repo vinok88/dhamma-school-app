@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, Share } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
-import { useClasses } from '@/hooks/useClasses';
+import { useMyClasses } from '@/hooks/useClasses';
 import { useAttendanceReport } from '@/hooks/useAttendance';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Button } from '@/components/ui/Button';
@@ -13,10 +13,13 @@ import { toIsoDate, lastNSundays } from '@/utils/date';
 
 type ReportType = 'weekly' | 'monthly';
 
-export default function ReportsScreen() {
+// Teacher-scoped attendance reports. Same data hook as the principal's screen —
+// RLS already limits a teacher to their own classes' attendance/students — but
+// the class filter only lists the classes the teacher is assigned to.
+export default function TeacherReportsScreen() {
   const { profile } = useAuth();
   const schoolId = profile?.schoolId ?? '';
-  const { data: classes } = useClasses(schoolId);
+  const { data: classes } = useMyClasses(profile?.id ?? '');
   const [reportType, setReportType] = useState<ReportType>('weekly');
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [customFrom, setCustomFrom] = useState('');
@@ -43,8 +46,6 @@ export default function ReportsScreen() {
     to
   );
 
-  // The hook already derives present/absent per student (absence is inferred for
-  // active sessions). Only show students whose class actually met in the period.
   const rows = (report ?? [])
     .map((v) => ({
       name: v.name,
@@ -64,7 +65,7 @@ export default function ReportsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-scaffold-bg">
-      <ScreenHeader title="Attendance Reports 📋" showBack dark />
+      <ScreenHeader title="Attendance Reports 📋" showBack />
 
       <ScrollView className="flex-1 px-4 pt-4" showsVerticalScrollIndicator={false}>
         {/* Report type */}
@@ -115,15 +116,15 @@ export default function ReportsScreen() {
           {useCustom ? 'Using custom range — tap Weekly or Monthly to reset.' : 'Optional — pick both dates for a custom range.'}
         </Text>
 
-        {/* Class filter */}
-        <Text className="text-sm font-sans-semibold text-text-primary mb-2">Class (optional)</Text>
+        {/* Class filter — the teacher's own classes */}
+        <Text className="text-sm font-sans-semibold text-text-primary mb-2">Class</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
           <View className="flex-row gap-2">
             <TouchableOpacity
               onPress={() => setSelectedClassId('')}
               className={`px-3 py-1.5 rounded-full border ${!selectedClassId ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
             >
-              <Text className={`text-xs font-sans-semibold ${!selectedClassId ? 'text-white' : 'text-text-muted'}`}>All Classes</Text>
+              <Text className={`text-xs font-sans-semibold ${!selectedClassId ? 'text-white' : 'text-text-muted'}`}>All My Classes</Text>
             </TouchableOpacity>
             {(classes ?? []).map((c) => (
               <TouchableOpacity
