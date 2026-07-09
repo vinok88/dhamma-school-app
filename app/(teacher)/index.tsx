@@ -114,6 +114,15 @@ export default function TeacherHome() {
             <Text style={{ fontSize: 28 }}>📢</Text>
             <Text className="text-brown font-sans-semibold text-sm mt-1">Send Notice</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/(teacher)/reports' as never)}
+            className="flex-1 rounded-xl p-4 items-center"
+            style={{ backgroundColor: COLORS.navy }}
+            activeOpacity={0.8}
+          >
+            <Text style={{ fontSize: 28 }}>📋</Text>
+            <Text className="text-white font-sans-semibold text-sm mt-1">Reports</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Recent announcements */}
