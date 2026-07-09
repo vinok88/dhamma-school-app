@@ -95,7 +95,7 @@ export default function ReportsScreen() {
               value={customFrom}
               onChange={(v) => { setCustomFrom(v); setLoaded(false); }}
               mode="date"
-              placeholder="Start date"
+              placeholder="DD/MM/YYYY"
               maximumDate={customTo ? new Date(customTo) : new Date()}
             />
           </View>
@@ -105,7 +105,7 @@ export default function ReportsScreen() {
               value={customTo}
               onChange={(v) => { setCustomTo(v); setLoaded(false); }}
               mode="date"
-              placeholder="End date"
+              placeholder="DD/MM/YYYY"
               minimumDate={customFrom ? new Date(customFrom) : undefined}
               maximumDate={new Date()}
             />
