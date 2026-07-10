@@ -8,6 +8,8 @@
 -- Drop application tables (CASCADE handles FKs and policies)
 -- ============================================================
 DROP TABLE IF EXISTS audit_logs            CASCADE;
+DROP TABLE IF EXISTS student_badges        CASCADE;
+DROP TABLE IF EXISTS badges                CASCADE;
 DROP TABLE IF EXISTS policies              CASCADE;
 DROP TABLE IF EXISTS student_link_attempts CASCADE;
 DROP TABLE IF EXISTS notifications         CASCADE;
@@ -29,6 +31,8 @@ DROP FUNCTION IF EXISTS request_add_student(TEXT,TEXT,TEXT,DATE,TEXT,TEXT,BOOLEA
 DROP FUNCTION IF EXISTS link_student_by_code(TEXT,TEXT,DATE)         CASCADE;
 DROP FUNCTION IF EXISTS approve_student(UUID,UUID)                   CASCADE;
 DROP FUNCTION IF EXISTS reject_student(UUID,TEXT)                    CASCADE;
+DROP FUNCTION IF EXISTS award_badge(UUID,UUID,TIMESTAMPTZ,TEXT)      CASCADE;
+DROP FUNCTION IF EXISTS revoke_badge(UUID)                           CASCADE;
 DROP FUNCTION IF EXISTS gen_student_display_id(UUID)                 CASCADE;
 DROP FUNCTION IF EXISTS assign_student_display_id()                  CASCADE;
 DROP FUNCTION IF EXISTS resolve_user_role_for_signup(TEXT)         CASCADE;
@@ -72,13 +76,15 @@ DO $$ BEGIN
   EXECUTE 'DROP POLICY IF EXISTS "Teacher docs: own update" ON storage.objects';
   EXECUTE 'DROP POLICY IF EXISTS "Teacher docs: own read" ON storage.objects';
   EXECUTE 'DROP POLICY IF EXISTS "Teacher docs: admin read" ON storage.objects';
+  EXECUTE 'DROP POLICY IF EXISTS "Badge images: public read" ON storage.objects';
+  EXECUTE 'DROP POLICY IF EXISTS "Badge images: staff write" ON storage.objects';
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 -- Empty buckets and remove them. Skip silently if buckets don't exist.
 DO $$ BEGIN
-  DELETE FROM storage.objects WHERE bucket_id IN ('student-photos', 'profile-photos', 'policies', 'teacher-documents');
-  DELETE FROM storage.buckets WHERE id IN ('student-photos', 'profile-photos', 'policies', 'teacher-documents');
+  DELETE FROM storage.objects WHERE bucket_id IN ('student-photos', 'profile-photos', 'policies', 'teacher-documents', 'badge-images');
+  DELETE FROM storage.buckets WHERE id IN ('student-photos', 'profile-photos', 'policies', 'teacher-documents', 'badge-images');
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 

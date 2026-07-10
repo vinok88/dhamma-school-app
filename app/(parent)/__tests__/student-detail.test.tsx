@@ -20,6 +20,9 @@ jest.mock('@/hooks/useAttendance', () => ({
   useStudentAttendanceHistory: () => ({ data: [] }),
 }));
 
+// Badges list pulls in @/lib/supabase via useBadges; stub it.
+jest.mock('@/components/badges/StudentBadges', () => ({ StudentBadges: () => null }));
+
 import StudentStatusScreen from '../student/[id]';
 import { useStudentDetail } from '@/hooks/useStudents';
 

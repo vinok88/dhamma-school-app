@@ -12,6 +12,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatDate, formatAge, formatDateShort, formatTime } from '@/utils/date';
 import { ATTENDANCE_STATUS_CONFIG, COLORS } from '@/constants';
 import { studentDisplayName } from '@/utils/display';
+import { StudentBadges } from '@/components/badges/StudentBadges';
 
 export default function StudentStatusScreen() {
   const router = useRouter();
@@ -140,6 +141,12 @@ export default function StudentStatusScreen() {
             </Text>
           </Card>
         ) : null}
+
+        {/* Badges */}
+        <Card className="mb-4">
+          <Text className="font-sans-semibold text-text-primary mb-3">Badges 🏅</Text>
+          <StudentBadges studentId={student.id} />
+        </Card>
 
         {/* Status note */}
         {student.statusNote && (

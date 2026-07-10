@@ -35,6 +35,7 @@ export default function TeacherLayout() {
       <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} /> }} />
       <Tabs.Screen name="student/[id]" options={{ href: null }} />
       <Tabs.Screen name="reports" options={{ href: null }} />
+      <Tabs.Screen name="badges" options={{ href: null }} />
     </Tabs>
   );
 }

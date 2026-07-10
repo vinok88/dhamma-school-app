@@ -152,6 +152,33 @@ export interface ConversationModel {
   unreadCount: number;
 }
 
+export interface BadgeModel {
+  id: string;
+  schoolId: string;
+  /** NULL → school-wide; set → class-wide. */
+  classId?: string;
+  className?: string;
+  name: string;
+  description?: string;
+  imageUrl?: string; // storage path in badge-images (public bucket)
+  createdBy?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface StudentBadgeModel {
+  id: string;
+  studentId: string;
+  badgeId: string;
+  note?: string;
+  awardedAt: string;
+  expiresAt?: string;
+  revokedAt?: string;
+  /** Derived: not revoked and not past expiry. */
+  isActive: boolean;
+  badge?: BadgeModel;
+}
+
 export interface NotificationModel {
   id: string;
   userId: string;

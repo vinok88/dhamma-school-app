@@ -12,6 +12,7 @@ const SHARED_ITEMS = [
   { label: 'Add Teacher', icon: '📨', route: '/(admin)/add-teacher', desc: 'Invite a teacher by email' },
   { label: 'Teachers', icon: '👩‍🏫', route: '/(admin)/teachers', desc: 'Manage teacher accounts' },
   { label: 'Events', icon: '📅', route: '/(admin)/events', desc: 'School events & calendar' },
+  { label: 'Badges', icon: '🏅', route: '/(admin)/badges', desc: 'Define school-wide achievement badges' },
   { label: 'Reports', icon: '📋', route: '/(admin)/reports', desc: 'Attendance reports & export' },
   { label: 'Announcements', icon: '📢', route: '/(admin)/announce', desc: 'Compose & send notices' },
   { label: 'Notifications', icon: '🔔', route: '/notifications', desc: 'View your notifications' },

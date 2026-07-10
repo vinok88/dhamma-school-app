@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useAuth } from '@/hooks/useAuth';
 import { useStudentDetail } from '@/hooks/useStudents';
 import { useStudentPhotoUrl } from '@/hooks/useProfile';
 import { useStudentAttendanceHistory } from '@/hooks/useAttendance';
+import { useBadges } from '@/hooks/useBadges';
+import { StudentBadges } from '@/components/badges/StudentBadges';
+import { AwardBadgeModal } from '@/components/badges/AwardBadgeModal';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -15,13 +19,19 @@ import { ATTENDANCE_STATUS_CONFIG, COLORS } from '@/constants';
 
 export default function StudentDetailScreen() {
   const router = useRouter();
+  const { profile } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: student, isLoading } = useStudentDetail(id);
   const { data: history } = useStudentAttendanceHistory(id, student?.classId);
   const { data: signedPhotoUrl } = useStudentPhotoUrl(student?.photoUrl);
+  const { data: allBadges } = useBadges(profile?.schoolId ?? '');
+  const [awardOpen, setAwardOpen] = useState(false);
 
   if (isLoading) return <LoadingSpinner fullScreen />;
   if (!student) return null;
+
+  // School-wide badges + the student's class badge (the class the teacher teaches).
+  const availableBadges = (allBadges ?? []).filter((b) => !b.classId || b.classId === student.classId);
 
   const presentCount = history?.filter((a) => a.status !== 'absent').length ?? 0;
   const totalCount = history?.length ?? 0;
@@ -54,6 +64,22 @@ export default function StudentDetailScreen() {
             <Row label="Gender" value={student.gender} />
             {student.hasAllergies && <Row label="Allergies" value={student.allergyNotes ?? 'Yes'} highlight />}
           </View>
+        </Card>
+
+        {/* Badges */}
+        <Card className="mb-4">
+          <View className="flex-row items-center justify-between mb-3">
+            <Text className="font-sans-semibold text-text-primary">Badges 🏅</Text>
+            <TouchableOpacity
+              onPress={() => setAwardOpen(true)}
+              className="rounded-full px-3 py-1.5"
+              style={{ backgroundColor: COLORS.primary }}
+              activeOpacity={0.85}
+            >
+              <Text className="text-white text-xs font-sans-semibold">+ Award</Text>
+            </TouchableOpacity>
+          </View>
+          <StudentBadges studentId={student.id} canManage />
         </Card>
 
         {/* Parent info */}
@@ -119,6 +145,13 @@ export default function StudentDetailScreen() {
         </Card>
         <View className="h-8" />
       </ScrollView>
+
+      <AwardBadgeModal
+        visible={awardOpen}
+        student={student}
+        badges={availableBadges}
+        onClose={() => setAwardOpen(false)}
+      />
     </SafeAreaView>
   );
 }

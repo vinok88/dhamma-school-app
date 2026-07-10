@@ -95,11 +95,12 @@ export default function TeacherHome() {
           </>
         )}
 
-        {/* Quick actions */}
-        <View className="flex-row gap-3 mb-4">
+        {/* Quick actions (2×2) */}
+        <View className="flex-row flex-wrap justify-between mb-1">
           <TouchableOpacity
             onPress={() => router.push('/(teacher)/attendance')}
-            className="flex-1 bg-primary rounded-xl p-4 items-center"
+            className="bg-primary rounded-xl p-4 items-center mb-3"
+            style={{ width: '48%' }}
             activeOpacity={0.8}
           >
             <Text style={{ fontSize: 28 }}>✅</Text>
@@ -107,8 +108,8 @@ export default function TeacherHome() {
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => router.push('/(teacher)/announce')}
-            className="flex-1 rounded-xl p-4 items-center"
-            style={{ backgroundColor: COLORS.gold }}
+            className="rounded-xl p-4 items-center mb-3"
+            style={{ backgroundColor: COLORS.gold, width: '48%' }}
             activeOpacity={0.8}
           >
             <Text style={{ fontSize: 28 }}>📢</Text>
@@ -116,12 +117,21 @@ export default function TeacherHome() {
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => router.push('/(teacher)/reports' as never)}
-            className="flex-1 rounded-xl p-4 items-center"
-            style={{ backgroundColor: COLORS.navy }}
+            className="rounded-xl p-4 items-center mb-3"
+            style={{ backgroundColor: COLORS.navy, width: '48%' }}
             activeOpacity={0.8}
           >
             <Text style={{ fontSize: 28 }}>📋</Text>
             <Text className="text-white font-sans-semibold text-sm mt-1">Reports</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/(teacher)/badges' as never)}
+            className="rounded-xl p-4 items-center mb-3"
+            style={{ backgroundColor: COLORS.success, width: '48%' }}
+            activeOpacity={0.8}
+          >
+            <Text style={{ fontSize: 28 }}>🏅</Text>
+            <Text className="text-white font-sans-semibold text-sm mt-1">Class Badges</Text>
           </TouchableOpacity>
         </View>
 

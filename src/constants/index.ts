@@ -16,6 +16,8 @@ export const TABLES = {
   STUDENT_PARENTS: 'student_parents',
   TEACHER_INVITATIONS: 'teacher_invitations',
   POLICIES: 'policies',
+  BADGES: 'badges',
+  STUDENT_BADGES: 'student_badges',
 } as const;
 
 // Supabase storage buckets
@@ -23,6 +25,7 @@ export const STORAGE = {
   STUDENT_PHOTOS: 'student-photos',
   PROFILE_PHOTOS: 'profile-photos',
   TEACHER_DOCUMENTS: 'teacher-documents',
+  BADGE_IMAGES: 'badge-images',
 } as const;
 
 // Colors
