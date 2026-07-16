@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { NotificationModel } from '@/types';
 import { TABLES } from '@/constants';
+import { useFocusedRefetchInterval } from './useFocusedRefetchInterval';
 
 function mapNotification(d: Record<string, unknown>): NotificationModel {
   return {
@@ -17,6 +18,10 @@ function mapNotification(d: Record<string, unknown>): NotificationModel {
 }
 
 export function useNotifications(userId: string) {
+  // Option B: 10-min background poll only while the screen is focused. Push
+  // notifications invalidate ['notifications'] on arrival (app/_layout.tsx) so
+  // new items still appear promptly; this poll is just the safety-net refresh.
+  const refetchInterval = useFocusedRefetchInterval();
   return useQuery({
     queryKey: ['notifications', userId],
     queryFn: async () => {
@@ -30,7 +35,7 @@ export function useNotifications(userId: string) {
       return (data ?? []).map(mapNotification);
     },
     enabled: !!userId,
-    refetchInterval: 30_000,
+    refetchInterval,
   });
 }
 

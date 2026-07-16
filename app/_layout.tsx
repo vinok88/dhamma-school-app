@@ -105,6 +105,25 @@ function RootLayoutNav() {
     };
   }, [profile?.role]);
 
+  // Foreground push receipt → refresh the affected queries so open screens
+  // update immediately instead of waiting for the next focus/poll. This is the
+  // "Option D" push-driven invalidation that lets announcements and message
+  // threads run with no background polling.
+  useEffect(() => {
+    const sub = Notifications.addNotificationReceivedListener((notification) => {
+      const data = notification.request.content.data as NotificationData;
+      // Every push has a matching in-app notification row.
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      if (data?.type === 'announcement') {
+        queryClient.invalidateQueries({ queryKey: ['announcements'] });
+      } else if (data?.type === 'message') {
+        queryClient.invalidateQueries({ queryKey: ['messages'] });
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
   // Replay any pending notification once profile finishes loading
   useEffect(() => {
     if (!profile || !pendingNavRef.current) return;

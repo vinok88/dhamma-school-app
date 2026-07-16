@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { StudentModel, StudentParentLink, StudentStatus } from '@/types';
 import { TABLES } from '@/constants';
+import { useFocusedRefetchInterval } from './useFocusedRefetchInterval';
 
 function mapParentLinks(rows: unknown): StudentParentLink[] {
   if (!Array.isArray(rows)) return [];
@@ -54,6 +55,9 @@ function mapStudent(d: Record<string, unknown>): StudentModel {
 }
 
 export function useMyStudents(userId: string) {
+  // Option B: 10-min focus-gated poll. Registration/approval changes are
+  // low-frequency; app-foreground refetch-on-focus covers the rest.
+  const refetchInterval = useFocusedRefetchInterval();
   return useQuery({
     queryKey: ['students', 'parent', userId],
     queryFn: async () => {
@@ -75,7 +79,7 @@ export function useMyStudents(userId: string) {
       return (data ?? []).map(mapStudent);
     },
     enabled: !!userId,
-    refetchInterval: 30_000,
+    refetchInterval,
   });
 }
 
@@ -397,6 +401,8 @@ export function useRejectStudent() {
 
 // Lightweight count of pending registrations — drives the Students tab badge.
 export function usePendingStudentsCount(schoolId: string) {
+  // Option B: 10-min focus-gated poll for the Students-tab badge count.
+  const refetchInterval = useFocusedRefetchInterval();
   return useQuery({
     queryKey: ['students', 'pending-count', schoolId],
     queryFn: async () => {
@@ -409,7 +415,7 @@ export function usePendingStudentsCount(schoolId: string) {
       return count ?? 0;
     },
     enabled: !!schoolId,
-    refetchInterval: 30_000,
+    refetchInterval,
   });
 }
 

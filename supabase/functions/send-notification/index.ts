@@ -1,15 +1,17 @@
 // Supabase Edge Function: send-notification
-// Triggered by a Supabase database webhook on INSERT to the announcements table.
+// Triggered by Supabase database webhooks on INSERT. Handles two source tables,
+// branching on the webhook payload's `table` field:
+//   - announcements → notifies the school / class audience
+//   - messages      → notifies the single recipient of a new direct message
 // Uses FCM HTTP v1 API with OAuth2 service account authentication (no legacy server key).
 //
 // Setup:
 //   1. Add secret: supabase secrets set FIREBASE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
-//   2. In Supabase Dashboard → Database → Webhooks, create a webhook:
-//      - Table: announcements
-//      - Event: INSERT
-//      - URL: {SUPABASE_URL}/functions/v1/send-notification
-//      - HTTP Method: POST
-//      - Header: Authorization: Bearer {SUPABASE_SERVICE_ROLE_KEY}
+//   2. In Supabase Dashboard → Database → Webhooks, create TWO webhooks that both
+//      POST to {SUPABASE_URL}/functions/v1/send-notification with header
+//      `Authorization: Bearer {SUPABASE_SERVICE_ROLE_KEY}`:
+//      - Table: announcements, Event: INSERT
+//      - Table: messages,      Event: INSERT
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -36,10 +38,19 @@ interface AnnouncementRecord {
   published_at: string
 }
 
+interface MessageRecord {
+  id: string
+  school_id: string
+  sender_id: string
+  recipient_id: string
+  body: string
+  created_at: string
+}
+
 interface WebhookPayload {
   type: 'INSERT' | 'UPDATE' | 'DELETE'
   table: string
-  record: AnnouncementRecord
+  record: AnnouncementRecord | MessageRecord
 }
 
 // ─── JWT / OAuth2 helpers ─────────────────────────────────────────────────────
@@ -226,35 +237,82 @@ async function sendFcmBatch(
   return { sent, failed, removed: staleTokens.length }
 }
 
-// ─── Main handler ─────────────────────────────────────────────────────────────
+// ─── Shared dispatch ──────────────────────────────────────────────────────────
 
-serve(async (req: Request) => {
-  try {
-    const payload: WebhookPayload = await req.json()
-    const announcement = payload.record
+const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
-    if (!announcement) {
-      return new Response(JSON.stringify({ error: 'No announcement record' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+/** Obtain an access token and fan out to the given tokens. No-op for an empty list. */
+async function sendPush(
+  serviceAccount: ServiceAccount,
+  supabase: ReturnType<typeof createClient>,
+  fcmTokens: string[],
+  fcmMessage: FcmMessage,
+): Promise<{ sent: number; failed: number; removed: number }> {
+  if (fcmTokens.length === 0) return { sent: 0, failed: 0, removed: 0 }
+  const accessToken = await getAccessToken(serviceAccount)
+  return await sendFcmBatch(serviceAccount.project_id, accessToken, fcmTokens, fcmMessage, supabase)
+}
 
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const serviceAccountJson = Deno.env.get('FIREBASE_SERVICE_ACCOUNT_JSON')
+/** Short personal name: preferred, else first word of full name, else fallback. */
+function shortName(full?: string | null, preferred?: string | null): string {
+  if (preferred && preferred.trim()) return preferred.trim()
+  if (full && full.trim()) return full.trim().split(/\s+/)[0]
+  return 'Someone'
+}
 
-    if (!serviceAccountJson) {
-      console.error('FIREBASE_SERVICE_ACCOUNT_JSON secret is not set')
-      return new Response(JSON.stringify({ error: 'FCM not configured' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+// ─── Message handler ──────────────────────────────────────────────────────────
 
-    const serviceAccount: ServiceAccount = JSON.parse(serviceAccountJson)
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+/** Notify the single recipient of a new direct message. */
+async function handleMessage(
+  message: MessageRecord,
+  supabase: ReturnType<typeof createClient>,
+  serviceAccount: ServiceAccount,
+): Promise<Response> {
+  const [{ data: recipient }, { data: sender }] = await Promise.all([
+    supabase.from('user_profiles').select('id, fcm_token').eq('id', message.recipient_id).single(),
+    supabase
+      .from('user_profiles')
+      .select('full_name, preferred_name')
+      .eq('id', message.sender_id)
+      .single(),
+  ])
 
+  const senderName = shortName(sender?.full_name as string, sender?.preferred_name as string)
+  const title = `New message from ${senderName}`
+
+  // In-app notification row. reference_id is the *sender* so tapping opens the
+  // thread with them (/messages/<sender_id>).
+  await supabase.from('notifications').insert({
+    user_id: message.recipient_id,
+    title,
+    body: message.body.substring(0, 200),
+    type: 'message',
+    reference_id: message.sender_id,
+    is_read: false,
+  })
+
+  const fcmTokens = recipient?.fcm_token ? [recipient.fcm_token as string] : []
+  const { sent, failed, removed } = await sendPush(serviceAccount, supabase, fcmTokens, {
+    title,
+    body: message.body.substring(0, 100),
+    data: { type: 'message', reference_id: message.sender_id },
+  })
+
+  console.log(`Message push — sent: ${sent}, failed: ${failed}, stale removed: ${removed}`)
+  return new Response(
+    JSON.stringify({ success: true, sent, failed, staleTokensRemoved: removed, notificationsCreated: 1 }),
+    { headers: JSON_HEADERS },
+  )
+}
+
+// ─── Announcement handler ─────────────────────────────────────────────────────
+
+/** Notify the school / class audience of a new announcement. */
+async function handleAnnouncement(
+  announcement: AnnouncementRecord,
+  supabase: ReturnType<typeof createClient>,
+  serviceAccount: ServiceAccount,
+): Promise<Response> {
     // ── Resolve target FCM tokens ───────────────────────────────────────────
 
     let fcmTokens: string[] = []
@@ -338,19 +396,9 @@ serve(async (req: Request) => {
       )
     }
 
-    if (fcmTokens.length === 0) {
-      console.log('No FCM tokens found — in-app notifications created only')
-      return new Response(
-        JSON.stringify({ sent: 0, notificationsCreated: targetUserIds.length }),
-        { headers: { 'Content-Type': 'application/json' } },
-      )
-    }
+    // ── Send FCM messages ──────────────────────────────────────────────────
 
-    // ── Obtain OAuth2 access token and send FCM messages ───────────────────
-
-    const accessToken = await getAccessToken(serviceAccount)
-
-    const fcmMessage: FcmMessage = {
+    const { sent, failed, removed } = await sendPush(serviceAccount, supabase, fcmTokens, {
       title: announcement.title,
       body: announcement.body.substring(0, 100),
       data: {
@@ -358,17 +406,9 @@ serve(async (req: Request) => {
         reference_id: announcement.id,
         announcement_type: announcement.type,
       },
-    }
+    })
 
-    const { sent, failed, removed } = await sendFcmBatch(
-      serviceAccount.project_id,
-      accessToken,
-      fcmTokens,
-      fcmMessage,
-      supabase,
-    )
-
-    console.log(`FCM complete — sent: ${sent}, failed: ${failed}, stale removed: ${removed}`)
+    console.log(`Announcement FCM — sent: ${sent}, failed: ${failed}, stale removed: ${removed}`)
 
     return new Response(
       JSON.stringify({
@@ -378,13 +418,47 @@ serve(async (req: Request) => {
         staleTokensRemoved: removed,
         notificationsCreated: targetUserIds.length,
       }),
-      { headers: { 'Content-Type': 'application/json' } },
+      { headers: JSON_HEADERS },
     )
+}
+
+// ─── Main handler ─────────────────────────────────────────────────────────────
+
+serve(async (req: Request) => {
+  try {
+    const payload: WebhookPayload = await req.json()
+
+    if (!payload?.record) {
+      return new Response(JSON.stringify({ error: 'No record in payload' }), {
+        status: 400,
+        headers: JSON_HEADERS,
+      })
+    }
+
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const serviceAccountJson = Deno.env.get('FIREBASE_SERVICE_ACCOUNT_JSON')
+
+    if (!serviceAccountJson) {
+      console.error('FIREBASE_SERVICE_ACCOUNT_JSON secret is not set')
+      return new Response(JSON.stringify({ error: 'FCM not configured' }), {
+        status: 500,
+        headers: JSON_HEADERS,
+      })
+    }
+
+    const serviceAccount: ServiceAccount = JSON.parse(serviceAccountJson)
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+    if (payload.table === 'messages') {
+      return await handleMessage(payload.record as MessageRecord, supabase, serviceAccount)
+    }
+    return await handleAnnouncement(payload.record as AnnouncementRecord, supabase, serviceAccount)
   } catch (error) {
     console.error('send-notification error:', error)
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } },
+      { status: 500, headers: JSON_HEADERS },
     )
   }
 })

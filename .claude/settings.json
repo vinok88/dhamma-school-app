@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(python3 -m json.tool)",
+      "Bash(ls /Users/vinod/Documents/work/repo/dhamma_school_app/app/\\\\\\(admin\\\\\\)/)",
+      "Bash(grep -r principal /Users/vinod/Documents/work/repo/dhamma_school_app --include=*.ts --include=*.tsx --include=*.sql --include=*.md)",
+      "Bash(find /Users/vinod/Documents/work/repo/dhamma_school_app/app -type f -name *.tsx)",
+      "Bash(find /Users/vinod/Documents/work/repo/dhamma_school_app/src/components -type f -name *.tsx)",
+      "Bash(grep -r \"Avatar\\\\|FlatList\" /Users/vinod/Documents/work/repo/dhamma_school_app/src/components --include=*.tsx)",
+      "Bash(npx jest:*)",
+      "Bash(npm test:*)",
+      "Bash(npx tsc *)",
+      "Bash(adb -s emulator-5554 emu avd name)",
+      "Bash(adb -s emulator-5554 emu kill)",
+      "Bash(command -v supabase)",
+      "Bash(supabase --version)"
+    ],
+    "additionalDirectories": [
+      "/Users/vinod/Documents/work/repo/dhamma_school_app/supabase/migrations"
+    ]
+  }
+}

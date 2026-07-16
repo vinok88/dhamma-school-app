@@ -38,7 +38,10 @@ export function useAnnouncements(schoolId: string, classId?: string) {
       return (data ?? []).map(mapAnnouncement);
     },
     enabled: !!schoolId,
-    refetchInterval: 30_000,
+    // Option D: no polling. New announcements arrive via FCM push, and the
+    // foreground listener (app/_layout.tsx) invalidates ['announcements'] on
+    // receipt. Refetch-on-focus (global default) is the safety net for any
+    // missed push.
   });
 }
 

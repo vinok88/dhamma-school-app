@@ -180,7 +180,9 @@ export function useMessageThread(userId: string, recipientId: string) {
       return (data ?? []).map(mapMessage);
     },
     enabled: !!(userId && recipientId),
-    refetchInterval: 30_000, // Poll every 30s for new messages
+    // Option D: no polling. Incoming messages trigger an FCM push whose
+    // foreground listener (app/_layout.tsx) invalidates ['messages'], and
+    // refetch-on-focus refreshes the thread when re-opened.
   });
 }
 

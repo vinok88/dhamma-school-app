@@ -247,6 +247,36 @@ supabase functions deploy send-notification
      - Value: `Bearer <your-service-role-key>`
 4. Click **"Create webhook"**
 
+Then create a **second** webhook for direct messages, pointing at the same function:
+   - **Schema**: `public` ← **see the warning below**
+   - **Name**: `on_message_insert`
+   - **Table**: `messages`
+   - **Events**: tick `INSERT` only
+   - **Type**: HTTP Request
+   - **URL**: `https://<your-project-ref>.supabase.co/functions/v1/send-notification`
+   - **Method**: `POST`
+   - **Headers**: `Authorization: Bearer <your-service-role-key>`
+
+> ⚠️ **Pick `public.messages`, not `realtime.messages`.** Supabase ships its own
+> internal `realtime.messages` table, so the table picker lists **two** entries
+> named `messages`. Choosing the `realtime` one creates a valid trigger on a table
+> the app never writes to: it never fires, logs no error, and produces **no Edge
+> Function logs at all** — which looks identical to "the webhook doesn't exist".
+> The `announcements` hook has no such name collision, so only messages hits this.
+>
+> Verify the trigger landed on the right table:
+> ```sql
+> select tgname, tgrelid::regclass as table_name
+> from pg_trigger
+> where tgrelid = 'public.messages'::regclass and not tgisinternal;
+> ```
+> If that returns no rows, the hook is on the wrong schema. To see webhook
+> delivery attempts and their HTTP status: `select * from net._http_response order by created desc limit 20;`
+
+The `send-notification` function branches on the webhook payload's `table` field:
+`announcements` notifies the school/class audience; `messages` notifies the one
+recipient. Both also insert an in-app `notifications` row.
+
 > Your **service-role key** is in Supabase → Project Settings → API → `service_role` key (not the anon key)
 
 ---

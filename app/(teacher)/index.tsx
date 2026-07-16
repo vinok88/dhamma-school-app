@@ -107,13 +107,13 @@ export default function TeacherHome() {
             <Text className="text-white font-sans-semibold text-sm mt-1">Take Attendance</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.push('/(teacher)/announce')}
+            onPress={() => router.push('/(teacher)/feed' as never)}
             className="rounded-xl p-4 items-center mb-3"
             style={{ backgroundColor: COLORS.gold, width: '48%' }}
             activeOpacity={0.8}
           >
             <Text style={{ fontSize: 28 }}>📢</Text>
-            <Text className="text-brown font-sans-semibold text-sm mt-1">Send Notice</Text>
+            <Text className="text-brown font-sans-semibold text-sm mt-1">Notice Board</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => router.push('/(teacher)/reports' as never)}

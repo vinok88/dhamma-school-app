@@ -1,0 +1,358 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, findNodeHandle, Modal, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Calendar } from 'react-native-calendars';
+import { useLocalSearchParams } from 'expo-router';
+import { useAuth } from '@/hooks/useAuth';
+import { useAnnouncements } from '@/hooks/useAnnouncements';
+import { useEvents } from '@/hooks/useEvents';
+import { AnnouncementCard } from '@/components/AnnouncementCard';
+import { EventCard } from '@/components/EventCard';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { toIsoDate } from '@/utils/date';
+import { COLORS } from '@/constants';
+import { AnnouncementType } from '@/types';
+
+type FilterValue =
+  | 'all'
+  | 'announcements'
+  | 'events'
+  | AnnouncementType; // 'school' | 'class' | 'emergency' | 'event_reminder'
+
+const FILTERS: { value: FilterValue; label: string }[] = [
+  { value: 'all',           label: 'All' },
+  { value: 'announcements', label: '📢 Notices' },
+  { value: 'events',        label: '📅 Events' },
+  { value: 'emergency',     label: '🚨 Emergency' },
+  { value: 'school',        label: 'School' },
+  { value: 'class',         label: 'Class' },
+];
+
+const EVENT_DOT       = COLORS.primary;        // red
+const ANNOUNCEMENT_DOT = COLORS.gold;          // gold
+const EMERGENCY_DOT   = COLORS.error;          // dark red
+const SUNDAY_DOT      = '#94A3B8';             // muted
+
+/**
+ * Shared Notice Board — calendar + announcements/events feed. Used by the parent
+ * and teacher screens. When `onSendAnnouncement` is provided (teachers/staff), a
+ * "Send announcement" action appears in the header.
+ */
+export function NoticeBoard({ onSendAnnouncement }: { onSendAnnouncement?: () => void }) {
+  const { profile } = useAuth();
+  const schoolId = profile?.schoolId ?? '';
+  const params = useLocalSearchParams<{ announcementId?: string; eventId?: string }>();
+
+  // null = no date picked → show recent items across all dates.
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterValue>('all');
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+
+  const { data: announcements, isLoading: aLoading } = useAnnouncements(schoolId);
+  const { data: events,        isLoading: eLoading } = useEvents(schoolId);
+
+  // Deep-link target: jump to the day of the referenced announcement / event,
+  // briefly highlight the card.
+  const scrollViewRef = useRef<ScrollView | null>(null);
+  const highlightRefs = useRef<Record<string, View | null>>({});
+
+  useEffect(() => {
+    if (!announcements && !events) return;
+    const targetAnnouncement = params.announcementId
+      ? (announcements ?? []).find((a) => a.id === params.announcementId)
+      : null;
+    const targetEvent = params.eventId
+      ? (events ?? []).find((e) => e.id === params.eventId)
+      : null;
+
+    if (targetAnnouncement) {
+      setSelectedDate(targetAnnouncement.publishedAt.slice(0, 10));
+      setFilter('all');
+      setHighlightId(`a-${targetAnnouncement.id}`);
+    } else if (targetEvent) {
+      setSelectedDate(targetEvent.startDatetime.slice(0, 10));
+      setFilter('all');
+      setHighlightId(`e-${targetEvent.id}`);
+    }
+  }, [params.announcementId, params.eventId, announcements?.length, events?.length]);
+
+  // Scroll to and clear the highlight after a moment
+  useEffect(() => {
+    if (!highlightId) return;
+    const t = setTimeout(() => {
+      const node = highlightRefs.current[highlightId];
+      const scrollHandle = findNodeHandle(scrollViewRef.current as any);
+      if (node && scrollHandle) {
+        (node as any).measureLayout?.(
+          scrollHandle,
+          (_x: number, y: number) => {
+            scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 12), animated: true });
+          },
+          () => {}
+        );
+      }
+    }, 200);
+    const clear = setTimeout(() => setHighlightId(null), 4000);
+    return () => { clearTimeout(t); clearTimeout(clear); };
+  }, [highlightId]);
+
+  // ── Build calendar markers (multi-dot) ─────────────────────────────
+  const markedDates = useMemo(() => {
+    const m: Record<string, any> = {};
+    const ensure = (key: string) => {
+      if (!m[key]) m[key] = { dots: [] as { color: string }[] };
+      return m[key];
+    };
+
+    // Sundays (session days) — light marker
+    const today = new Date();
+    for (let i = -60; i < 120; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      if (d.getDay() === 0) {
+        const key = toIsoDate(d);
+        ensure(key).dots.push({ color: SUNDAY_DOT, key: 'sunday' });
+      }
+    }
+
+    // Events
+    (events ?? []).forEach((e) => {
+      const key = e.startDatetime.slice(0, 10);
+      ensure(key).dots.push({ color: EVENT_DOT, key: `event-${e.id}` });
+    });
+
+    // Announcements (publish day)
+    (announcements ?? []).forEach((a) => {
+      const key = a.publishedAt.slice(0, 10);
+      const color = a.type === 'emergency' ? EMERGENCY_DOT : ANNOUNCEMENT_DOT;
+      ensure(key).dots.push({ color, key: `ann-${a.id}` });
+    });
+
+    // Selected day overlay (only when the user has explicitly tapped a date)
+    if (selectedDate) {
+      if (m[selectedDate]) {
+        m[selectedDate].selected = true;
+        m[selectedDate].selectedColor = COLORS.primary;
+      } else {
+        m[selectedDate] = { selected: true, selectedColor: COLORS.primary, dots: [] };
+      }
+    }
+
+    return m;
+  }, [events, announcements, selectedDate]);
+
+  // ── Filter + slice the list shown below the calendar ───────────────
+  const RECENT_LIMIT = 30;
+
+  const filteredItems = useMemo(() => {
+    let items: { kind: 'event' | 'announcement'; payload: any; date: string }[] = [
+      ...(events ?? []).map((e) => ({ kind: 'event' as const, payload: e, date: e.startDatetime })),
+      ...(announcements ?? []).map((a) => ({ kind: 'announcement' as const, payload: a, date: a.publishedAt })),
+    ];
+
+    if (selectedDate) {
+      items = items.filter((i) => i.date.startsWith(selectedDate));
+    }
+
+    if (filter === 'events') {
+      items = items.filter((i) => i.kind === 'event');
+    } else if (filter === 'announcements') {
+      items = items.filter((i) => i.kind === 'announcement');
+    } else if (filter !== 'all') {
+      items = items.filter(
+        (i) => i.kind === 'announcement' && i.payload.type === filter
+      );
+    }
+
+    if (selectedDate) {
+      return items.sort((a, b) => (a.date < b.date ? -1 : 1));
+    }
+    return items
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
+      .slice(0, RECENT_LIMIT);
+  }, [events, announcements, selectedDate, filter]);
+
+  const isLoading = aLoading || eLoading;
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const activeFilter = FILTERS.find((f) => f.value === filter) ?? FILTERS[0];
+
+  return (
+    <SafeAreaView className="flex-1 bg-scaffold-bg">
+      <View className="bg-scaffold-bg px-5 pt-4 pb-3">
+        <View className="flex-row items-start justify-between">
+          <View className="flex-1 mr-2">
+            <Text className="text-xs tracking-widest uppercase mb-1" style={{ color: '#8B7D6B' }}>
+              Notice Board
+            </Text>
+            <Text style={{ fontSize: 22, fontFamily: 'DMSerifDisplay_400Regular', color: '#1C1C1E' }}>
+              Notices & Events 📢
+            </Text>
+          </View>
+          {onSendAnnouncement ? (
+            <TouchableOpacity
+              onPress={onSendAnnouncement}
+              className="rounded-full px-3 py-2 mt-1"
+              style={{ backgroundColor: COLORS.primary, flexShrink: 0 }}
+              activeOpacity={0.85}
+            >
+              <Text className="text-white text-xs font-sans-semibold">＋ Announce</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
+
+      {/* Filter dropdown */}
+      <View className="bg-white border-b border-gray-100 px-4 py-3">
+        <Text className="text-xs mb-1.5" style={{ color: COLORS.textMuted }}>
+          Showing
+        </Text>
+        <TouchableOpacity
+          onPress={() => setPickerOpen(true)}
+          activeOpacity={0.7}
+          className="flex-row items-center justify-between bg-gray-100 rounded-xl px-4 py-3"
+        >
+          <Text className="text-sm font-sans-semibold text-text-primary" numberOfLines={1}>
+            {activeFilter.label}
+          </Text>
+          <Text style={{ color: COLORS.textMuted, fontSize: 12 }}>▼</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Modal
+        visible={pickerOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPickerOpen(false)}
+      >
+        <Pressable
+          onPress={() => setPickerOpen(false)}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 24 }}
+        >
+          <Pressable className="bg-white rounded-2xl overflow-hidden">
+            <View className="px-4 py-3 border-b border-gray-100">
+              <Text className="text-sm font-sans-semibold text-text-primary">Filter notices & events</Text>
+            </View>
+            {FILTERS.map((f) => {
+              const active = filter === f.value;
+              return (
+                <TouchableOpacity
+                  key={f.value}
+                  onPress={() => {
+                    setFilter(f.value);
+                    setPickerOpen(false);
+                  }}
+                  className={`flex-row items-center justify-between px-4 py-3 ${active ? 'bg-red-50' : ''}`}
+                  activeOpacity={0.6}
+                >
+                  <Text
+                    className={`text-sm ${active ? 'font-sans-semibold' : ''}`}
+                    style={{ color: active ? COLORS.primary : '#1C1C1E' }}
+                  >
+                    {f.label}
+                  </Text>
+                  {active ? <Text style={{ color: COLORS.primary }}>✓</Text> : null}
+                </TouchableOpacity>
+              );
+            })}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <ScrollView ref={scrollViewRef} className="flex-1" showsVerticalScrollIndicator={false}>
+        <Calendar
+          onDayPress={(day: { dateString: string }) =>
+            setSelectedDate((curr) => (curr === day.dateString ? null : day.dateString))
+          }
+          markedDates={markedDates}
+          markingType="multi-dot"
+          theme={{
+            backgroundColor: COLORS.white,
+            calendarBackground: COLORS.white,
+            selectedDayBackgroundColor: COLORS.primary,
+            todayTextColor: COLORS.primary,
+            arrowColor: COLORS.navy,
+            textDayFontFamily: 'WorkSans_400Regular',
+            textMonthFontFamily: 'DMSerifDisplay_400Regular',
+          }}
+        />
+
+        {/* Legend */}
+        <View className="flex-row flex-wrap px-4 py-3 gap-x-4 gap-y-2">
+          <LegendDot color={EVENT_DOT}        label="Event" />
+          <LegendDot color={ANNOUNCEMENT_DOT} label="Notice" />
+          <LegendDot color={EMERGENCY_DOT}    label="Emergency" />
+          <LegendDot color={SUNDAY_DOT}       label="Sunday" />
+        </View>
+
+        <View className="px-4 pt-2">
+          <View className="flex-row items-center justify-between mb-3">
+            <Text className="font-sans-semibold text-text-primary">
+              {selectedDate ? formatHeader(selectedDate) : 'Recent'}
+            </Text>
+            {selectedDate ? (
+              <TouchableOpacity onPress={() => setSelectedDate(null)} activeOpacity={0.7}>
+                <Text className="text-xs font-sans-semibold" style={{ color: COLORS.primary }}>
+                  Show recent
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+          {isLoading ? (
+            <LoadingSpinner />
+          ) : filteredItems.length === 0 ? (
+            <EmptyState
+              icon="📭"
+              title="Nothing here"
+              subtitle={selectedDate ? 'No notices or events for this day' : 'No matching notices or events yet'}
+            />
+          ) : (
+            filteredItems.map((item) => {
+              const key = item.kind === 'event' ? `e-${item.payload.id}` : `a-${item.payload.id}`;
+              const isHighlighted = highlightId === key;
+              return (
+                <View
+                  key={key}
+                  ref={(r) => { highlightRefs.current[key] = r; }}
+                  style={isHighlighted ? {
+                    borderWidth: 2,
+                    borderColor: COLORS.primary,
+                    borderRadius: 16,
+                    padding: 2,
+                    marginBottom: 12,
+                  } : undefined}
+                >
+                  {item.kind === 'event'
+                    ? <EventCard event={item.payload} />
+                    : <AnnouncementCard announcement={item.payload} />}
+                </View>
+              );
+            })
+          )}
+        </View>
+        <View className="h-8" />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <View className="flex-row items-center">
+      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color, marginRight: 6 }} />
+      <Text className="text-xs" style={{ color: COLORS.textMuted }}>{label}</Text>
+    </View>
+  );
+}
+
+function formatHeader(iso: string): string {
+  const d = new Date(iso + 'T00:00:00');
+  const today = toIsoDate(new Date());
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+
+  if (iso === today)                  return `Today · ${d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`;
+  if (iso === toIsoDate(tomorrow))    return `Tomorrow · ${d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`;
+  if (iso === toIsoDate(yesterday))   return `Yesterday · ${d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`;
+  return d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}

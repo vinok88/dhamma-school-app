@@ -49,6 +49,9 @@ build-*.apk
 # Supabase temp
 supabase/.temp/
 
+# Claude Code — personal, machine-specific settings (.claude/settings.json IS committed)
+.claude/settings.local.json
+
 # Scratch
 scratch.txt
 

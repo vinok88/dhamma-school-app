@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { ClassModel } from '@/types';
 import { TABLES } from '@/constants';
+import { useFocusedRefetchInterval } from './useFocusedRefetchInterval';
 
 function mapClass(d: Record<string, unknown>): ClassModel {
   const teachers = ((d.class_teachers as Record<string, unknown>[]) ?? []).map((row) => {
@@ -52,6 +53,9 @@ export function useClasses(schoolId: string) {
 
 // Multi-class support: a teacher may be assigned to more than one class.
 export function useMyClasses(teacherId: string) {
+  // Option B: 10-min focus-gated poll. Class assignment changes are rare; the
+  // teacher also sees updates on app foreground via refetch-on-focus.
+  const refetchInterval = useFocusedRefetchInterval();
   return useQuery({
     queryKey: ['classes', 'teacher', teacherId],
     queryFn: async () => {
@@ -85,7 +89,7 @@ export function useMyClasses(teacherId: string) {
       return classes.map((c, i) => ({ ...c, studentCount: counts[i].count ?? 0 }));
     },
     enabled: !!teacherId,
-    refetchInterval: 30_000,
+    refetchInterval,
     refetchOnWindowFocus: true,
   });
 }
